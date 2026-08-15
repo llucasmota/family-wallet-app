@@ -9,9 +9,51 @@ import { revalidatePath } from 'next/cache';
 
 export async function addExpenseAction(payload: CreateExpensePayload) {
   try {
-    const result = await ExpenseService.createExpense(payload);
+    let { familyId, payerMemberId, categoryId, splits } = payload;
+
+    // 1. If familyId is missing, resolve first active family
+    if (!familyId || familyId === 'default' || !familyId.includes('-')) {
+      const [firstFam] = await db.query.families.findMany({ limit: 1 });
+      if (firstFam) familyId = firstFam.id;
+    }
+
+    // 2. If payerMemberId is missing or invalid, resolve first family member
+    if (!payerMemberId || !payerMemberId.includes('-')) {
+      const [firstMember] = await db.query.familyMembers.findMany({
+        where: eq(familyMembers.familyId, familyId),
+        limit: 1,
+      });
+      if (firstMember) payerMemberId = firstMember.id;
+    }
+
+    // 3. If categoryId is missing or invalid, resolve first category
+    if (!categoryId || !categoryId.includes('-')) {
+      const [firstCat] = await db.query.categories.findMany({
+        where: eq(categories.familyId, familyId),
+        limit: 1,
+      });
+      if (firstCat) categoryId = firstCat.id;
+    }
+
+    // 4. Sanitize splits
+    const validSplits = (splits || [])
+      .filter((s) => s.memberId && s.memberId.includes('-'))
+      .map((s) => ({ memberId: s.memberId, percentage: s.percentage }));
+
+    const resolvedSplits =
+      validSplits.length > 0 ? validSplits : [{ memberId: payerMemberId, percentage: 100 }];
+
+    const result = await ExpenseService.createExpense({
+      ...payload,
+      familyId,
+      payerMemberId,
+      categoryId,
+      splits: resolvedSplits,
+    });
+
     revalidatePath('/');
     revalidatePath('/expenses');
+    revalidatePath('/family');
     return { success: true, data: result };
   } catch (error: any) {
     console.error('Error adding expense:', error);

@@ -173,12 +173,18 @@ export async function addMemberAction(payload: {
   role?: 'admin' | 'member' | 'child';
 }) {
   try {
+    let targetFamilyId = payload.familyId;
+    if (!targetFamilyId || !targetFamilyId.includes('-')) {
+      const [firstFam] = await db.query.families.findMany({ limit: 1 });
+      if (firstFam) targetFamilyId = firstFam.id;
+    }
+
     const [created] = await db
       .insert(familyMembers)
       .values({
-        familyId: payload.familyId,
-        displayName: payload.displayName,
-        avatarKey: payload.avatarKey,
+        familyId: targetFamilyId,
+        displayName: payload.displayName.trim() || 'Novo Membro',
+        avatarKey: payload.avatarKey || 'husband',
         color: payload.color || '#1E6B52',
         role: payload.role || 'member',
       })
@@ -215,12 +221,32 @@ export async function recordSettlementAction(payload: {
   note?: string;
 }) {
   try {
+    let targetFamilyId = payload.familyId;
+    if (!targetFamilyId || !targetFamilyId.includes('-')) {
+      const [firstFam] = await db.query.families.findMany({ limit: 1 });
+      if (firstFam) targetFamilyId = firstFam.id;
+    }
+
+    let fromId = payload.fromMemberId;
+    let toId = payload.toMemberId;
+    const members = await db.query.familyMembers.findMany({
+      where: eq(familyMembers.familyId, targetFamilyId),
+    });
+
+    if (!fromId || !fromId.includes('-')) {
+      if (members[0]) fromId = members[0].id;
+    }
+    if (!toId || !toId.includes('-')) {
+      if (members[1]) toId = members[1].id;
+      else if (members[0]) toId = members[0].id;
+    }
+
     const [settlement] = await db
       .insert(settlements)
       .values({
-        familyId: payload.familyId,
-        fromMemberId: payload.fromMemberId,
-        toMemberId: payload.toMemberId,
+        familyId: targetFamilyId,
+        fromMemberId: fromId,
+        toMemberId: toId,
         amount: payload.amount.toString(),
         settlementDate: new Date().toISOString().split('T')[0],
         notes: payload.note || 'Acerto de contas entre membros',
@@ -242,13 +268,19 @@ export async function updateFamilySettingsAction(payload: {
   currency?: string;
 }) {
   try {
+    let targetFamilyId = payload.familyId;
+    if (!targetFamilyId || !targetFamilyId.includes('-')) {
+      const [firstFam] = await db.query.families.findMany({ limit: 1 });
+      if (firstFam) targetFamilyId = firstFam.id;
+    }
+
     const [updated] = await db
       .update(families)
       .set({
         name: payload.name,
         currency: payload.currency || 'BRL',
       })
-      .where(eq(families.id, payload.familyId))
+      .where(eq(families.id, targetFamilyId))
       .returning();
 
     revalidatePath('/family');
@@ -268,6 +300,12 @@ export async function updateMemberProfileAction(payload: {
   role?: 'admin' | 'member' | 'child';
 }) {
   try {
+    let targetId = payload.memberId;
+    if (!targetId || !targetId.includes('-')) {
+      const [first] = await db.query.familyMembers.findMany({ limit: 1 });
+      if (first) targetId = first.id;
+    }
+
     const [updated] = await db
       .update(familyMembers)
       .set({
@@ -276,7 +314,7 @@ export async function updateMemberProfileAction(payload: {
         color: payload.color || '#2E7D5E',
         ...(payload.role ? { role: payload.role } : {}),
       })
-      .where(eq(familyMembers.id, payload.memberId))
+      .where(eq(familyMembers.id, targetId))
       .returning();
 
     revalidatePath('/family');

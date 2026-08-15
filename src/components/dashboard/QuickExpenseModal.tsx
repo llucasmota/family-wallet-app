@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { CurrencyInput } from '../ui/CurrencyInput';
+import { Toast } from '../ui/Toast';
 import { X, Layers, Repeat, Users, Check, Loader2, ArrowRightLeft, DollarSign } from 'lucide-react';
 import { addExpenseAction } from '@/app/actions/expenses';
-import { recordSettlementAction } from '@/app/actions/family';
+import { recordSettlementAction, getFamilyDataAction } from '@/app/actions/family';
 import { DEFAULT_CATEGORIES } from '@/db/default-categories';
 
 export interface QuickExpenseModalProps {
@@ -26,25 +27,53 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
   categories = [],
   onSuccess,
 }) => {
-  // Use loaded categories or fallback to default categories
+  const [liveFamilyId, setLiveFamilyId] = useState(familyId || '');
+  const [liveMembers, setLiveMembers] = useState(members);
+  const [liveCategories, setLiveCategories] = useState(categories);
+
+  const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error'; isVisible: boolean }>({
+    message: '',
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, isVisible: true });
+  };
+
+  // Dynamically load family data if not provided via props
+  React.useEffect(() => {
+    if (isOpen && (!liveFamilyId || liveMembers.length === 0 || liveCategories.length === 0)) {
+      getFamilyDataAction().then((res) => {
+        if (res.success && res.family) {
+          setLiveFamilyId(res.family.id);
+          if (res.family.members && res.family.members.length > 0) {
+            setLiveMembers(res.family.members as any);
+          }
+          if (res.family.categories && res.family.categories.length > 0) {
+            setLiveCategories(res.family.categories as any);
+          }
+        }
+      });
+    }
+  }, [isOpen, liveFamilyId, liveMembers.length, liveCategories.length]);
+
   const activeCategories =
-    categories && categories.length > 0
-      ? categories
+    liveCategories && liveCategories.length > 0
+      ? liveCategories
       : DEFAULT_CATEGORIES.map((c, i) => ({ id: `cat-${i}`, name: c.name, color: c.color }));
 
   const activeMembers =
-    members && members.length >= 2
-      ? members
+    liveMembers && liveMembers.length > 0
+      ? liveMembers
       : [
-          { id: '1', displayName: 'Membro 1', role: 'admin' },
-          { id: '2', displayName: 'Membro 2', role: 'member' },
+          { id: '1', displayName: 'Administrador', role: 'admin' },
         ];
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
-  const [categoryId, setCategoryId] = useState(activeCategories[0]?.id || '');
-  const [payerMemberId, setPayerMemberId] = useState(activeMembers[0]?.id || '');
+  const [categoryId, setCategoryId] = useState('');
+  const [payerMemberId, setPayerMemberId] = useState('');
   const [expenseType, setExpenseType] = useState<'single' | 'installment' | 'recurring' | 'initial_credit'>('single');
   const [installments, setInstallments] = useState(3);
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal');
@@ -53,8 +82,8 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initial Credit Form State
-  const [creditorId, setCreditorId] = useState(activeMembers[0]?.id || '');
-  const [debtorId, setDebtorId] = useState(activeMembers[1]?.id || '');
+  const [creditorId, setCreditorId] = useState('');
+  const [debtorId, setDebtorId] = useState('');
 
   React.useEffect(() => {
     if (activeCategories.length > 0 && !categoryId) setCategoryId(activeCategories[0].id);
@@ -62,6 +91,9 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
     if (activeMembers.length >= 2) {
       if (!creditorId) setCreditorId(activeMembers[0].id);
       if (!debtorId) setDebtorId(activeMembers[1].id);
+    } else if (activeMembers.length === 1) {
+      if (!creditorId) setCreditorId(activeMembers[0].id);
+      if (!debtorId) setDebtorId(activeMembers[0].id);
     }
   }, [activeCategories, activeMembers, categoryId, payerMemberId, creditorId, debtorId]);
 
@@ -80,20 +112,34 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !familyId) return;
+    if (!amount) {
+      showToast('Por favor, informe o valor do lançamento', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
       if (expenseType === 'initial_credit') {
-        // Record starting credit adjustment
-        await recordSettlementAction({
-          familyId,
-          fromMemberId: debtorId,
-          toMemberId: creditorId,
+        const res = await recordSettlementAction({
+          familyId: liveFamilyId || 'default',
+          fromMemberId: debtorId || activeMembers[0].id,
+          toMemberId: creditorId || activeMembers[0].id,
           amount: -parseFloat(amount),
           note: description || 'Crédito Inicial Pré-existente',
         });
+
+        if (res.success) {
+          showToast('✨ Crédito registrado com sucesso!');
+          setTimeout(() => {
+            setDescription('');
+            setAmount('');
+            if (onSuccess) onSuccess();
+            onClose();
+          }, 800);
+        } else {
+          showToast(res.error || 'Erro ao registrar crédito', 'error');
+        }
       } else {
         const splits =
           splitMode === 'equal'
@@ -103,11 +149,11 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                 { memberId: activeMembers[1]?.id || activeMembers[0].id, percentage: customWife },
               ];
 
-        await addExpenseAction({
-          familyId,
+        const res = await addExpenseAction({
+          familyId: liveFamilyId || 'default',
           payerMemberId: payerMemberId || activeMembers[0].id,
           categoryId: categoryId || activeCategories[0]?.id || '',
-          description,
+          description: description.trim() || 'Despesa Geral',
           amount: parseFloat(amount),
           dueDate,
           expenseType,
@@ -115,14 +161,22 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
           splits,
           status: 'pending',
         });
-      }
 
-      setDescription('');
-      setAmount('');
-      if (onSuccess) onSuccess();
-      onClose();
-    } catch (err) {
+        if (res.success) {
+          showToast('✨ Lançamento salvo com sucesso!');
+          setTimeout(() => {
+            setDescription('');
+            setAmount('');
+            if (onSuccess) onSuccess();
+            onClose();
+          }, 800);
+        } else {
+          showToast(res.error || 'Erro ao salvar despesa', 'error');
+        }
+      }
+    } catch (err: any) {
       console.error(err);
+      showToast(err.message || 'Erro inesperado ao salvar', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -441,6 +495,13 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
           </div>
         </form>
       </Card>
+
+      <Toast
+        isVisible={toast.isVisible}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((prev) => ({ ...prev, isVisible: false }))}
+      />
     </div>
   );
 };
