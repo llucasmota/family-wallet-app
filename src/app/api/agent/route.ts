@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
     const familyContext: FamilyContext = {
       currentDate: todayLocal,
       members: family?.members?.map((m) => ({ id: m.id, name: m.displayName, role: m.role })) || [
-        { id: 'husband-1', name: 'Lucas Mota', role: 'admin' },
-        { id: 'wife-1', name: 'Esposa', role: 'member' },
+        { id: 'member-1', name: 'Administrador', role: 'admin' },
+        { id: 'member-2', name: 'Membro', role: 'member' },
       ],
       categories: family?.categories?.map((c) => ({ id: c.id, name: c.name })) || [
         { id: 'cat-1', name: 'Mercado & Feira' },

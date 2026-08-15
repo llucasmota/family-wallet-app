@@ -107,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
           <ThemeToggle />
 
           <UserMenu
-            displayName="Lucas Mota"
+            displayName="Minha Conta"
             role="admin"
             avatarKey="husband"
           />

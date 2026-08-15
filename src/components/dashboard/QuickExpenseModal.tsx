@@ -35,8 +35,8 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
     members && members.length >= 2
       ? members
       : [
-          { id: '1', displayName: 'Lucas Mota', role: 'admin' },
-          { id: '2', displayName: 'Esposa', role: 'member' },
+          { id: '1', displayName: 'Membro 1', role: 'admin' },
+          { id: '2', displayName: 'Membro 2', role: 'member' },
         ];
 
   const [description, setDescription] = useState('');
@@ -127,8 +127,8 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
     }
   };
 
-  const husbandName = activeMembers[0]?.displayName || 'Lucas Mota';
-  const wifeName = activeMembers[1]?.displayName || 'Esposa';
+  const husbandName = activeMembers[0]?.displayName || 'Membro 1';
+  const wifeName = activeMembers[1]?.displayName || 'Membro 2';
 
   return (
     <div

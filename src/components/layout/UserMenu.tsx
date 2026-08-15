@@ -14,7 +14,7 @@ export interface UserMenuProps {
 }
 
 export const UserMenu: React.FC<UserMenuProps> = ({
-  displayName = 'Lucas Mota',
+  displayName = 'Minha Conta',
   email = '',
   role = 'admin',
   avatarKey = 'husband',

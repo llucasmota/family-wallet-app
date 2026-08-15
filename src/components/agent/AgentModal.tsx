@@ -279,8 +279,8 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
               <p className="text-sm font-semibold text-on-surface">
                 {isRecording ? 'Gravando... Fale o que você comprou' : 'Toque no microfone para falar'}
               </p>
-              <p className="text-xs text-on-surface-variant">
-                Ex: "Comprei 120 reais de mercado no cartão do Lucas hoje"
+              <p className="text-[11px] text-on-surface-variant">
+                Ex: &quot;Comprei 120 reais de mercado hoje parcelado em 3x&quot; ou &quot;Conta de luz 350 reais paga pelo esposo&quot;
               </p>
             </div>
           </div>

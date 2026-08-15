@@ -221,7 +221,7 @@ export default function AuthPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Lucas Mota"
+                  placeholder="Seu nome completo"
                   className="w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-9 pr-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
                 />
               </div>
