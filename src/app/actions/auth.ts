@@ -26,6 +26,8 @@ export async function signInAction(formData: { email: string; password: string }
 export async function signUpAction(formData: { email: string; password: string; name: string }) {
   const supabase = await createClient();
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
   const { data, error } = await supabase.auth.signUp({
     email: formData.email,
     password: formData.password,
@@ -33,6 +35,7 @@ export async function signUpAction(formData: { email: string; password: string; 
       data: {
         display_name: formData.name,
       },
+      emailRedirectTo: `${appUrl}/auth/callback`,
     },
   });
 
@@ -53,8 +56,10 @@ export async function signUpAction(formData: { email: string; password: string; 
     }
   }
 
+  const requiresVerification = !data.session && !!data.user;
+
   revalidatePath('/', 'layout');
-  return { success: true };
+  return { success: true, requiresVerification, email: formData.email };
 }
 
 export async function signOutAction() {
