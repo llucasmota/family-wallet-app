@@ -13,26 +13,50 @@ import {
   Check,
   Loader2,
   Plus,
-  Sparkles,
+  Settings,
   X,
   Copy,
   ExternalLink,
   MessageCircle,
-  QrCode,
+  Pencil,
+  Sparkles,
+  Home,
 } from 'lucide-react';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { getFamilyDataAction, recordSettlementAction } from '@/app/actions/family';
+import {
+  getFamilyDataAction,
+  recordSettlementAction,
+  updateFamilySettingsAction,
+  updateMemberProfileAction,
+} from '@/app/actions/family';
+import { AVATAR_PRESETS, FAMILY_EMBLEMS } from '@/components/ui/AvatarPresets';
 
 export default function FamilyPage() {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
+  const [isMemberEditOpen, setIsMemberEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettling, setIsSettling] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Group settings state
+  const [groupName, setGroupName] = useState('');
+  const [groupCurrency, setGroupCurrency] = useState('BRL');
+
+  // Selected member to edit
+  const [editingMember, setEditingMember] = useState<{
+    id: string;
+    displayName: string;
+    avatarKey: string;
+    color: string;
+    role: 'admin' | 'member' | 'child';
+  } | null>(null);
 
   // Credit adjustment form state
   const [creditAmount, setCreditAmount] = useState('');
@@ -43,6 +67,7 @@ export default function FamilyPage() {
   const [family, setFamily] = useState<{
     id: string;
     name: string;
+    currency: string;
     members: Array<{
       id: string;
       displayName: string;
@@ -69,6 +94,8 @@ export default function FamilyPage() {
       const res = await getFamilyDataAction();
       if (res.success && res.family) {
         setFamily(res.family as any);
+        setGroupName(res.family.name);
+        setGroupCurrency(res.family.currency || 'BRL');
         setSettlements(res.settlements || []);
         if (res.family.members.length >= 2) {
           setCreditorId(res.family.members[0].id);
@@ -92,6 +119,8 @@ export default function FamilyPage() {
       if (e.key === 'Escape') {
         setIsCreditModalOpen(false);
         setIsInviteModalOpen(false);
+        setIsGroupSettingsOpen(false);
+        setIsMemberEditOpen(false);
         setIsAgentOpen(false);
         setIsQuickAddOpen(false);
       }
@@ -129,6 +158,53 @@ export default function FamilyPage() {
       } catch {}
     } else {
       handleCopyInvite();
+    }
+  };
+
+  const handleSaveGroupSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!family || !groupName.trim()) return;
+
+    setIsSaving(true);
+    try {
+      await updateFamilySettingsAction({
+        familyId: family.id,
+        name: groupName.trim(),
+        currency: groupCurrency,
+      });
+      setIsGroupSettingsOpen(false);
+      await loadFamily();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOpenMemberEdit = (member: any) => {
+    setEditingMember({ ...member });
+    setIsMemberEditOpen(true);
+  };
+
+  const handleSaveMemberProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+
+    setIsSaving(true);
+    try {
+      await updateMemberProfileAction({
+        memberId: editingMember.id,
+        displayName: editingMember.displayName,
+        avatarKey: editingMember.avatarKey,
+        color: editingMember.color,
+        role: editingMember.role,
+      });
+      setIsMemberEditOpen(false);
+      await loadFamily();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -176,7 +252,22 @@ export default function FamilyPage() {
   };
 
   const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: family?.currency || 'BRL' }).format(
+      val
+    );
+
+  const M3_PALETTE = [
+    '#1E6B52', // Emerald / Pine
+    '#3D6473', // Slate Blue
+    '#D97706', // Warm Amber
+    '#E11D48', // Rose Berry
+    '#7C3AED', // Violet
+    '#0284C7', // Ocean
+    '#059669', // Mint
+    '#4F46E5', // Indigo
+    '#CA8A04', // Gold
+    '#4B5563', // Charcoal
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-surface transition-colors duration-200">
@@ -186,17 +277,32 @@ export default function FamilyPage() {
       />
 
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">
-              {family?.name || 'Grupo Familiar'}
-            </h1>
-            <p className="text-xs sm:text-sm text-on-surface-variant">
-              Membros cadastrados, papéis de avatares e acertos de contas em tempo real
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-m3-lg bg-primary/10 text-primary border border-primary/20 shadow-m3-1">
+              <Home className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">
+                  {family?.name || 'Grupo Familiar'}
+                </h1>
+                <button
+                  onClick={() => setIsGroupSettingsOpen(true)}
+                  title="Configurar Grupo"
+                  className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs sm:text-sm text-on-surface-variant">
+                Membros cadastrados, avatares inteligentes e acerto de contas
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outlined"
               size="sm"
@@ -282,9 +388,12 @@ export default function FamilyPage() {
 
         {/* Members List */}
         <div className="flex flex-col gap-4">
-          <h2 className="text-base font-semibold text-on-surface flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" /> Membros da Família ({family?.members.length || 0})
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-on-surface flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> Membros da Família ({family?.members.length || 0})
+            </h2>
+            <span className="text-xs text-on-surface-variant">Clique em Editar para personalizar avatar</span>
+          </div>
 
           {isLoading ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -323,16 +432,234 @@ export default function FamilyPage() {
                         </Badge>
                       </div>
                       <span className="text-xs text-on-surface-variant mt-0.5">
-                        Papel: {member.avatarKey === 'husband' ? 'Esposo' : member.avatarKey === 'wife' ? 'Esposa' : 'Familiar'}
+                        Avatar: {AVATAR_PRESETS.find((p) => p.key === member.avatarKey)?.name || 'Personalizado'}
                       </span>
                     </div>
                   </div>
+
+                  <Button
+                    variant="tonal"
+                    size="sm"
+                    onClick={() => handleOpenMemberEdit(member)}
+                    className="gap-1.5 text-xs h-8"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Editar
+                  </Button>
                 </Card>
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Group Settings Modal */}
+      {isGroupSettingsOpen && (
+        <div
+          onClick={() => setIsGroupSettingsOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <Card
+            variant="elevated"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md shadow-m3-3 flex flex-col gap-4"
+          >
+            <div className="flex items-center justify-between border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-on-surface">Configurações do Grupo</h3>
+              </div>
+              <Button variant="text" size="icon" onClick={() => setIsGroupSettingsOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleSaveGroupSettings} className="flex flex-col gap-4 text-xs">
+              <div>
+                <label className="font-semibold text-on-surface-variant">Nome do Grupo / Família</label>
+                <input
+                  type="text"
+                  required
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Ex: Família Mota, Nosso Lar"
+                  className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-on-surface-variant">Moeda Padrão</label>
+                <select
+                  value={groupCurrency}
+                  onChange={(e) => setGroupCurrency(e.target.value)}
+                  className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none cursor-pointer"
+                >
+                  <option value="BRL">Real Brasileiro (R$ - BRL)</option>
+                  <option value="USD">Dólar Americano ($ - USD)</option>
+                  <option value="EUR">Euro (€ - EUR)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-outline-variant/20 dark:border-white/[0.06]">
+                <Button
+                  variant="text"
+                  size="sm"
+                  type="button"
+                  onClick={() => setIsGroupSettingsOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button variant="filled" size="md" type="submit" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Configurações'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Member Profile Edit Modal with AI Character Gallery */}
+      {isMemberEditOpen && editingMember && (
+        <div
+          onClick={() => setIsMemberEditOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <Card
+            variant="elevated"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg shadow-m3-3 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-semibold text-on-surface">Editar Perfil do Membro</h3>
+                  <p className="text-xs text-on-surface-variant">Escolha um avatar de personagem IA e personalize</p>
+                </div>
+              </div>
+              <Button variant="text" size="icon" onClick={() => setIsMemberEditOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleSaveMemberProfile} className="flex flex-col gap-4 text-xs">
+              {/* Preview */}
+              <div className="flex items-center justify-center py-3 bg-surface-container/40 rounded-m3-lg gap-4">
+                <Avatar
+                  name={editingMember.displayName}
+                  avatarKey={editingMember.avatarKey}
+                  color={editingMember.color}
+                  role={editingMember.role}
+                  size="xl"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-base text-on-surface">{editingMember.displayName || 'Nome'}</span>
+                  <span className="text-xs text-on-surface-variant">
+                    {AVATAR_PRESETS.find((p) => p.key === editingMember.avatarKey)?.name}
+                  </span>
+                  <span className="text-[11px] text-primary mt-0.5">
+                    {editingMember.role === 'admin' ? 'Administrador Familiar' : 'Membro'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-on-surface-variant">Nome de Exibição</label>
+                <input
+                  type="text"
+                  required
+                  value={editingMember.displayName}
+                  onChange={(e) =>
+                    setEditingMember({ ...editingMember, displayName: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              {/* Avatar Gallery */}
+              <div>
+                <label className="font-semibold text-on-surface-variant mb-2 block">
+                  Galeria de Personagens IA
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                  {AVATAR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() =>
+                        setEditingMember({
+                          ...editingMember,
+                          avatarKey: preset.key,
+                          color: preset.bgColor,
+                        })
+                      }
+                      className={`flex flex-col items-center p-2 rounded-m3-md border transition-all text-center gap-1 ${
+                        editingMember.avatarKey === preset.key
+                          ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-m3-1'
+                          : 'border-outline-variant/30 hover:bg-surface-container'
+                      }`}
+                    >
+                      <span className="text-2xl">{preset.emoji}</span>
+                      <span className="text-[10px] font-semibold text-on-surface truncate w-full">
+                        {preset.name.split('/')[0]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Picker */}
+              <div>
+                <label className="font-semibold text-on-surface-variant mb-2 block">Cor de Identificação</label>
+                <div className="flex flex-wrap gap-2">
+                  {M3_PALETTE.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setEditingMember({ ...editingMember, color })}
+                      className={`h-7 w-7 rounded-full flex items-center justify-center transition-transform ${
+                        editingMember.color === color ? 'scale-125 ring-2 ring-primary' : 'hover:scale-110'
+                      }`}
+                      style={{ backgroundColor: color }}
+                    >
+                      {editingMember.color === color && <Check className="h-3.5 w-3.5 text-white" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-on-surface-variant">Papel Familiar</label>
+                <select
+                  value={editingMember.role}
+                  onChange={(e) =>
+                    setEditingMember({ ...editingMember, role: e.target.value as any })
+                  }
+                  className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2 text-xs text-on-surface focus:border-primary focus:outline-none cursor-pointer"
+                >
+                  <option value="admin">Administrador (Controle Total)</option>
+                  <option value="member">Membro (Lançamentos e Visualização)</option>
+                  <option value="child">Dependente / Filho</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-outline-variant/20 dark:border-white/[0.06]">
+                <Button
+                  variant="text"
+                  size="sm"
+                  type="button"
+                  onClick={() => setIsMemberEditOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button variant="filled" size="md" type="submit" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Alterações'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
 
       {/* Dedicated Invite Modal */}
       {isInviteModalOpen && (

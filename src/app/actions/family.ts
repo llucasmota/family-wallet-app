@@ -97,25 +97,76 @@ export async function recordSettlementAction(payload: {
   note?: string;
 }) {
   try {
-    const [inserted] = await db
+    const [settlement] = await db
       .insert(settlements)
       .values({
         familyId: payload.familyId,
         fromMemberId: payload.fromMemberId,
         toMemberId: payload.toMemberId,
-        amount: payload.amount.toFixed(2),
+        amount: payload.amount.toString(),
         settlementDate: new Date().toISOString().split('T')[0],
-        notes: payload.note || 'Acerto de contas realizado',
+        notes: payload.note || 'Acerto de contas entre membros',
       })
       .returning();
 
-    revalidatePath('/');
     revalidatePath('/family');
-    revalidatePath('/expenses');
-
-    return { success: true, data: inserted };
+    revalidatePath('/');
+    return { success: true, settlement };
   } catch (error: any) {
     console.error('Error recording settlement:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Falha ao registrar acerto' };
+  }
+}
+
+export async function updateFamilySettingsAction(payload: {
+  familyId: string;
+  name: string;
+  currency?: string;
+}) {
+  try {
+    const [updated] = await db
+      .update(families)
+      .set({
+        name: payload.name,
+        currency: payload.currency || 'BRL',
+      })
+      .where(eq(families.id, payload.familyId))
+      .returning();
+
+    revalidatePath('/family');
+    revalidatePath('/');
+    return { success: true, family: updated };
+  } catch (error: any) {
+    console.error('Error updating family settings:', error);
+    return { success: false, error: error.message || 'Falha ao atualizar grupo familiar' };
+  }
+}
+
+export async function updateMemberProfileAction(payload: {
+  memberId: string;
+  displayName: string;
+  avatarKey: string;
+  color?: string;
+  role?: 'admin' | 'member' | 'child';
+}) {
+  try {
+    const [updated] = await db
+      .update(familyMembers)
+      .set({
+        displayName: payload.displayName,
+        avatarKey: payload.avatarKey,
+        color: payload.color || '#2E7D5E',
+        ...(payload.role ? { role: payload.role } : {}),
+      })
+      .where(eq(familyMembers.id, payload.memberId))
+      .returning();
+
+    revalidatePath('/family');
+    revalidatePath('/');
+    revalidatePath('/expenses');
+    return { success: true, member: updated };
+  } catch (error: any) {
+    console.error('Error updating member profile:', error);
+    return { success: false, error: error.message || 'Falha ao atualizar perfil do membro' };
   }
 }
