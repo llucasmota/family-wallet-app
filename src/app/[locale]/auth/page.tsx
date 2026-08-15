@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Wallet, Mail, Lock, User, ArrowRight, Sparkles, Loader2, Check } from 'lucide-react';
-import Link from 'next/link';
+import { Wallet, Mail, Lock, User, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { signInAction, signUpAction } from '@/app/actions/auth';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -14,18 +14,39 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setMessage(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
-    // Mock quick auth session / redirect for development
-    setTimeout(() => {
+    try {
+      if (isSignUp) {
+        const res = await signUpAction({ email, password, name });
+        if (res.success) {
+          setSuccessMessage('Conta criada com sucesso! Redirecionando...');
+          setTimeout(() => {
+            router.push('/');
+          }, 1000);
+        } else {
+          setErrorMessage(res.error || 'Erro ao criar conta');
+        }
+      } else {
+        const res = await signInAction({ email, password });
+        if (res.success) {
+          router.push('/');
+        } else {
+          setErrorMessage(res.error || 'Email ou senha inválidos');
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Ocorreu um erro ao processar');
+    } finally {
       setIsLoading(false);
-      router.push('/');
-    }, 1000);
+    }
   };
 
   return (
@@ -52,7 +73,8 @@ export default function AuthPage() {
             type="button"
             onClick={() => {
               setIsSignUp(false);
-              setMessage(null);
+              setErrorMessage(null);
+              setSuccessMessage(null);
             }}
             className={`flex-1 py-2 rounded-m3-sm font-semibold transition-all ${
               !isSignUp ? 'bg-surface dark:bg-[#1E2421] shadow-m3-1 text-primary' : 'text-on-surface-variant'
@@ -64,7 +86,8 @@ export default function AuthPage() {
             type="button"
             onClick={() => {
               setIsSignUp(true);
-              setMessage(null);
+              setErrorMessage(null);
+              setSuccessMessage(null);
             }}
             className={`flex-1 py-2 rounded-m3-sm font-semibold transition-all ${
               isSignUp ? 'bg-surface dark:bg-[#1E2421] shadow-m3-1 text-primary' : 'text-on-surface-variant'
@@ -73,6 +96,20 @@ export default function AuthPage() {
             Cadastrar
           </button>
         </div>
+
+        {/* Error / Success Feedback */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 rounded-m3-md bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-500">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="rounded-m3-md bg-primary-container/30 border border-primary/20 p-3 text-xs text-primary font-medium">
+            {successMessage}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs">
@@ -122,12 +159,6 @@ export default function AuthPage() {
               />
             </div>
           </div>
-
-          {message && (
-            <div className="rounded-m3-md bg-primary-container/30 p-3 text-xs text-primary font-medium">
-              {message}
-            </div>
-          )}
 
           <Button variant="filled" size="md" type="submit" disabled={isLoading} className="mt-2 w-full gap-2">
             {isLoading ? (

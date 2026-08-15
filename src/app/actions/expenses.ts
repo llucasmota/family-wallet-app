@@ -3,7 +3,8 @@
 import { ExpenseService, CreateExpensePayload } from '@/services/expense-service';
 import { db } from '@/db';
 import { expenses, categories, familyMembers, expenseSplits } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, gte, lte } from 'drizzle-orm';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 export async function addExpenseAction(payload: CreateExpensePayload) {
@@ -61,15 +62,22 @@ export async function deleteExpenseAction(expenseId: string) {
   }
 }
 
-export async function getDashboardDataAction(familyId: string) {
+export async function getDashboardDataAction(familyId: string, referenceDateStr?: string) {
   try {
-    const metrics = await ExpenseService.getDashboardMetrics(familyId);
+    const refDate = referenceDateStr ? new Date(referenceDateStr) : new Date();
+    const metrics = await ExpenseService.getDashboardMetrics(familyId, refDate);
     
-    // Fetch recent expenses with payer and category relations
+    const monthStart = format(startOfMonth(refDate), 'yyyy-MM-dd');
+    const monthEnd = format(endOfMonth(refDate), 'yyyy-MM-dd');
+
+    // Fetch expenses for the selected month
     const rawExpenses = await db.query.expenses.findMany({
-      where: eq(expenses.familyId, familyId),
+      where: and(
+        eq(expenses.familyId, familyId),
+        gte(expenses.dueDate, monthStart),
+        lte(expenses.dueDate, monthEnd)
+      ),
       orderBy: [desc(expenses.dueDate)],
-      limit: 15,
       with: {
         payer: true,
         category: true,

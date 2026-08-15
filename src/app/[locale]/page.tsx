@@ -6,6 +6,7 @@ import { MetricCard } from '@/components/ui/MetricCard';
 import { SpendingChart, CategorySpending } from '@/components/dashboard/SpendingChart';
 import { RecentExpensesList, RecentExpenseItem } from '@/components/dashboard/RecentExpensesList';
 import { CategoryBudgets, CategoryBudget } from '@/components/dashboard/CategoryBudgets';
+import { MonthPicker } from '@/components/ui/MonthPicker';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [familyData, setFamilyData] = useState<{
     id: string;
@@ -44,13 +46,16 @@ export default function DashboardPage() {
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>([]);
   const [historicalMonthly, setHistoricalMonthly] = useState<Array<{ month: string; amount: number }>>([]);
 
-  const loadData = async () => {
+  const loadData = async (dateToLoad: Date = selectedDate) => {
     try {
       const famRes = await getFamilyDataAction();
       if (famRes.success && famRes.family) {
         setFamilyData(famRes.family as any);
 
-        const dashRes = await getDashboardDataAction(famRes.family.id);
+        const dashRes = await getDashboardDataAction(
+          famRes.family.id,
+          dateToLoad.toISOString()
+        );
         if (dashRes.success && dashRes.metrics) {
           setMetrics(dashRes.metrics as any);
           if (dashRes.recentExpenses) {
@@ -133,7 +138,7 @@ export default function DashboardPage() {
 
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             {isLoading ? (
               <Skeleton className="h-8 w-56 mb-1" />
@@ -146,6 +151,14 @@ export default function DashboardPage() {
               Visão consolidada de gastos compartilhados e projeções futuras
             </p>
           </div>
+
+          <MonthPicker
+            currentDate={selectedDate}
+            onChange={(newDate) => {
+              setSelectedDate(newDate);
+              loadData(newDate);
+            }}
+          />
         </div>
 
         {/* 4 Metric Cards / Shimmer Skeleton */}

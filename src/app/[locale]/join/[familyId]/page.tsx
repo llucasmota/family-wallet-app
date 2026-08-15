@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
-import { Users, Heart, Baby, Shield, Check, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Users, Heart, Baby, Shield, Check, Loader2, AlertCircle } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { getFamilyDataAction } from '@/app/actions/family';
+import { joinFamilyAction } from '@/app/actions/auth';
 
 export default function JoinFamilyPage() {
   const params = useParams();
@@ -19,6 +20,7 @@ export default function JoinFamilyPage() {
   const [familyName, setFamilyName] = useState('Família');
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -41,12 +43,26 @@ export default function JoinFamilyPage() {
     if (!displayName) return;
 
     setIsJoining(true);
+    setErrorMessage(null);
 
-    // Mock quick join & redirect
-    setTimeout(() => {
+    try {
+      const res = await joinFamilyAction({
+        familyId,
+        displayName,
+        avatarKey,
+        role,
+      });
+
+      if (res.success) {
+        router.push('/');
+      } else {
+        setErrorMessage(res.error || 'Não foi possível ingressar na família');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Erro inesperado ao ingressar');
+    } finally {
       setIsJoining(false);
-      router.push('/');
-    }, 800);
+    }
   };
 
   const avatarOptions = [
@@ -69,6 +85,13 @@ export default function JoinFamilyPage() {
             Você foi convidado(a) para participar do controle financeiro da sua família. Escolha seu avatar e nome de exibição abaixo.
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="flex items-center gap-2 rounded-m3-md bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-500">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         <form onSubmit={handleJoin} className="flex flex-col gap-5 text-xs">
           <div>

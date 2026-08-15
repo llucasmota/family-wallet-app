@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Search, Filter, Plus, Layers, Repeat, Trash2, CheckCircle2, Circle, Download } from 'lucide-react';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { AgentModal } from '@/components/agent/AgentModal';
+import { MonthPicker } from '@/components/ui/MonthPicker';
 import { getFamilyDataAction } from '@/app/actions/family';
 import { getDashboardDataAction, toggleExpenseStatusAction, deleteExpenseAction } from '@/app/actions/expenses';
 
@@ -18,6 +19,7 @@ export default function ExpensesPage() {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [familyData, setFamilyData] = useState<{
     id: string;
@@ -27,12 +29,15 @@ export default function ExpensesPage() {
 
   const [expenses, setExpenses] = useState<any[]>([]);
 
-  const loadExpenses = async () => {
+  const loadExpenses = async (dateToLoad: Date = selectedDate) => {
     try {
       const famRes = await getFamilyDataAction();
       if (famRes.success && famRes.family) {
         setFamilyData(famRes.family as any);
-        const dashRes = await getDashboardDataAction(famRes.family.id);
+        const dashRes = await getDashboardDataAction(
+          famRes.family.id,
+          dateToLoad.toISOString()
+        );
         if (dashRes.success && dashRes.recentExpenses) {
           setExpenses(dashRes.recentExpenses);
         }
@@ -116,7 +121,14 @@ export default function ExpensesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthPicker
+              currentDate={selectedDate}
+              onChange={(newDate) => {
+                setSelectedDate(newDate);
+                loadExpenses(newDate);
+              }}
+            />
             <Button variant="outlined" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs">
               <Download className="h-4 w-4" />
               Exportar CSV
