@@ -15,10 +15,12 @@ if (!connectionString) {
   );
 }
 
-// Connection client for PostgreSQL / Supabase
+// Connection client for PostgreSQL / Supabase Pooler (Serverless friendly)
 export const client = postgres(connectionString, {
   prepare: false,
-  max: 10,
+  max: 1,
+  ssl: 'require',
+  connect_timeout: 10,
 });
 
 export const db = drizzle(client, { schema });
