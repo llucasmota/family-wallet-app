@@ -150,9 +150,9 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
               ];
 
         const res = await addExpenseAction({
-          familyId: liveFamilyId || 'default',
-          payerMemberId: payerMemberId || activeMembers[0].id,
-          categoryId: categoryId || activeCategories[0]?.id || '',
+          familyId: liveFamilyId,
+          payerMemberId: payerMemberId.startsWith('1') || payerMemberId.startsWith('2') ? '' : payerMemberId,
+          categoryId: categoryId.startsWith('cat-') ? '' : categoryId,
           description: description.trim() || 'Despesa Geral',
           amount: parseFloat(amount),
           dueDate,

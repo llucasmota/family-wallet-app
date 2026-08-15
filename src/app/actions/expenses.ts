@@ -2,42 +2,82 @@
 
 import { ExpenseService, CreateExpensePayload } from '@/services/expense-service';
 import { db } from '@/db';
-import { expenses, categories, familyMembers, expenseSplits } from '@/db/schema';
+import { expenses, categories, familyMembers, expenseSplits, families } from '@/db/schema';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import { DEFAULT_CATEGORIES } from '@/db/default-categories';
+
+function isValidUUID(str?: string | null): boolean {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
 
 export async function addExpenseAction(payload: CreateExpensePayload) {
   try {
     let { familyId, payerMemberId, categoryId, splits } = payload;
 
-    // 1. If familyId is missing, resolve first active family
-    if (!familyId || familyId === 'default' || !familyId.includes('-')) {
+    // 1. Resolve familyId
+    if (!isValidUUID(familyId)) {
       const [firstFam] = await db.query.families.findMany({ limit: 1 });
-      if (firstFam) familyId = firstFam.id;
+      if (firstFam) {
+        familyId = firstFam.id;
+      } else {
+        const [newFam] = await db.insert(families).values({ name: 'Minha Família', currency: 'BRL' }).returning();
+        familyId = newFam.id;
+      }
     }
 
-    // 2. If payerMemberId is missing or invalid, resolve first family member
-    if (!payerMemberId || !payerMemberId.includes('-')) {
+    // 2. Resolve payerMemberId
+    if (!isValidUUID(payerMemberId)) {
       const [firstMember] = await db.query.familyMembers.findMany({
         where: eq(familyMembers.familyId, familyId),
         limit: 1,
       });
-      if (firstMember) payerMemberId = firstMember.id;
+      if (firstMember) {
+        payerMemberId = firstMember.id;
+      } else {
+        const [newMember] = await db
+          .insert(familyMembers)
+          .values({
+            familyId,
+            displayName: 'Administrador',
+            role: 'admin',
+            avatarKey: 'husband',
+            color: '#1E6B52',
+          })
+          .returning();
+        payerMemberId = newMember.id;
+      }
     }
 
-    // 3. If categoryId is missing or invalid, resolve first category
-    if (!categoryId || !categoryId.includes('-')) {
+    // 3. Resolve categoryId
+    if (!isValidUUID(categoryId)) {
       const [firstCat] = await db.query.categories.findMany({
         where: eq(categories.familyId, familyId),
         limit: 1,
       });
-      if (firstCat) categoryId = firstCat.id;
+      if (firstCat) {
+        categoryId = firstCat.id;
+      } else {
+        // Seed default categories
+        const [newCat] = await db
+          .insert(categories)
+          .values({
+            familyId,
+            name: DEFAULT_CATEGORIES[0].name,
+            icon: DEFAULT_CATEGORIES[0].icon,
+            color: DEFAULT_CATEGORIES[0].color,
+            isDefault: true,
+          })
+          .returning();
+        categoryId = newCat.id;
+      }
     }
 
     // 4. Sanitize splits
     const validSplits = (splits || [])
-      .filter((s) => s.memberId && s.memberId.includes('-'))
+      .filter((s) => isValidUUID(s.memberId))
       .map((s) => ({ memberId: s.memberId, percentage: s.percentage }));
 
     const resolvedSplits =
