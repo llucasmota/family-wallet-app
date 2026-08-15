@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Material Design 3 Light Theme (Pastel / Google Mint Tone) */
+  --md-primary: #1E6B52;
+  --md-on-primary: #FFFFFF;
+  --md-primary-container: #A6F2D2;
+  --md-on-primary-container: #002116;
+
+  --md-secondary: #4D6357;
+  --md-on-secondary: #FFFFFF;
+  --md-secondary-container: #CFE9D9;
+  --md-on-secondary-container: #0A1F16;
+
+  --md-tertiary: #3D6473;
+  --md-on-tertiary: #FFFFFF;
+  --md-tertiary-container: #C1E9FB;
+  --md-on-tertiary-container: #001F29;
+
+  /* Surfaces & Backgrounds: Pastel Off-White, Never Harsh White */
+  --md-surface: #F6F9F7;
+  --md-surface-dim: #D7DCD8;
+  --md-surface-bright: #F6F9F7;
+  --md-surface-container-low: #F0F4F1;
+  --md-surface-container: #EAEFEA;
+  --md-surface-container-high: #E4EAE4;
+  --md-surface-container-highest: #DEE4DE;
+
+  --md-on-surface: #171D1A;
+  --md-on-surface-variant: #3F4943;
+
+  --md-outline: #6F7973;
+  --md-outline-variant: #BFC9C2;
+
+  --md-error: #BA1A1A;
+  --md-on-error: #FFFFFF;
+  --md-error-container: #FFDAD6;
+  --md-on-error-container: #410002;
+}
+
+.dark {
+  /* Material Design 3 Dark Theme (Deep Slate / Mint Luminescence) */
+  --md-primary: #8AD5B7;
+  --md-on-primary: #003828;
+  --md-primary-container: #00513B;
+  --md-on-primary-container: #A6F2D2;
+
+  --md-secondary: #B4CCBD;
+  --md-on-secondary: #1F352A;
+  --md-secondary-container: #364C40;
+  --md-on-secondary-container: #CFE9D9;
+
+  --md-tertiary: #A5CDDE;
+  --md-on-tertiary: #063544;
+  --md-tertiary-container: #234C5B;
+  --md-on-tertiary-container: #C1E9FB;
+
+  /* Deep slate surfaces */
+  --md-surface: #101412;
+  --md-surface-dim: #101412;
+  --md-surface-bright: #363A38;
+  --md-surface-container-low: #181D1B;
+  --md-surface-container: #1C211F;
+  --md-surface-container-high: #272B29;
+  --md-surface-container-highest: #313634;
+
+  --md-on-surface: #DFE4DF;
+  --md-on-surface-variant: #BFC9C2;
+
+  --md-outline: #89938C;
+  --md-outline-variant: #3F4943;
+
+  --md-error: #FFB4AB;
+  --md-on-error: #690005;
+  --md-error-container: #93000A;
+  --md-on-error-container: #FFDAD6;
+}
+
+body {
+  background-color: var(--md-surface);
+  color: var(--md-on-surface);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
+}

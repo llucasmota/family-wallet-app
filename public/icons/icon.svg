@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="m3Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E7D5E"/>
+      <stop offset="100%" stop-color="#144A38"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Background Rounded Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#m3Grad)"/>
+  
+  <!-- Modern Wallet Outline & Emblem -->
+  <g filter="url(#shadow)" transform="translate(96, 96)">
+    <!-- Main Wallet Body -->
+    <rect x="0" y="48" width="320" height="232" rx="40" fill="#FFFFFF" fill-opacity="0.95"/>
+    <!-- Wallet Flap -->
+    <path d="M 0 88 C 0 64, 24 48, 48 48 L 272 48 C 296 48, 320 64, 320 88 L 320 110 L 0 110 Z" fill="#E8F5E9"/>
+    <!-- Accent Clip -->
+    <rect x="220" y="130" width="100" height="68" rx="20" fill="#1E6B52"/>
+    <!-- Center Mint Sparkle Token -->
+    <circle cx="270" cy="164" r="14" fill="#34D399"/>
+  </g>
+</svg>

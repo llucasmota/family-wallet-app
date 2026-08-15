@@ -1,0 +1,79 @@
+{
+  "Common": {
+    "appName": "Family Wallet",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "loading": "Loading...",
+    "search": "Search...",
+    "filter": "Filter",
+    "status": "Status",
+    "date": "Date",
+    "amount": "Amount",
+    "category": "Category",
+    "payer": "Payer",
+    "paid": "Paid",
+    "pending": "Pending",
+    "all": "All",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "Dashboard": {
+    "title": "Overview",
+    "currentMonth": "Current Month",
+    "totalSpent": "Month Expenses",
+    "totalPending": "Still to Pay",
+    "nextMonthForecast": "Next Month Forecast",
+    "trendTitle": "Spending Trend",
+    "trendUp": "Upward trend",
+    "trendDown": "Downward trend",
+    "trendStable": "Stable",
+    "spendingByCategory": "Spending by Category",
+    "recentExpenses": "Recent Expenses",
+    "viewAll": "View all",
+    "quickAdd": "New Expense",
+    "agentMode": "AI Assistant"
+  },
+  "Expenses": {
+    "title": "Expenses",
+    "newExpense": "New Expense",
+    "description": "Description",
+    "dueDate": "Due Date",
+    "paymentDate": "Payment Date",
+    "type": "Expense Type",
+    "typeSingle": "Single Expense",
+    "typeInstallment": "Installment",
+    "typeRecurring": "Recurring / Fixed",
+    "installments": "Installments",
+    "installmentsCount": "Number of Installments",
+    "installmentEndDate": "Until when it will be charged",
+    "splitTitle": "Bill Split",
+    "splitEqual": "Split Equally (50% / 50%)",
+    "splitCustom": "Custom Split",
+    "notes": "Notes / Receipt",
+    "recurringNotice": "Edits will only affect future charges."
+  },
+  "Family": {
+    "title": "Family Group",
+    "members": "Members",
+    "addMember": "Add Member",
+    "roles": {
+      "admin": "Admin",
+      "member": "Member",
+      "child": "Dependent / Child"
+    },
+    "settlementTitle": "Settlement Balance",
+    "whoOwesWhom": "{from} owes {amount} to {to}"
+  },
+  "Agent": {
+    "title": "Smart Assistant",
+    "subtitle": "Upload a receipt, send a voice note or type what you purchased",
+    "placeholderText": "E.g.: Paid $150 at the grocery store in 3 installments...",
+    "listening": "Listening...",
+    "analyzing": "Analyzing receipt...",
+    "draftCreated": "Expense draft created successfully!",
+    "confirmAndSave": "Confirm Expense"
+  }
+}
