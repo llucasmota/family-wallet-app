@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +27,7 @@ import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { Toast } from '@/components/ui/Toast';
 import {
   getFamilyDataAction,
   recordSettlementAction,
@@ -49,6 +50,16 @@ export default function FamilyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSettling, setIsSettling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error'; isVisible: boolean }>({
+    message: '',
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, isVisible: true });
+  };
 
   // Group settings state
   const [groupName, setGroupName] = useState('');
@@ -96,31 +107,36 @@ export default function FamilyPage() {
     }>
   >([]);
 
-  const loadFamily = async () => {
+  const loadFamily = useCallback(async () => {
+    setIsLoading(true);
     try {
       const res = await getFamilyDataAction();
       if (res.success && res.family) {
         setFamily(res.family as any);
         setGroupName(res.family.name);
         setGroupCurrency(res.family.currency || 'BRL');
-        setSettlements(res.settlements || []);
-        if (res.family.members.length >= 2) {
+        if (res.settlements) {
+          setSettlements(res.settlements);
+        }
+        if (res.family.members && res.family.members.length > 0) {
           setCreditorId(res.family.members[0].id);
-          setDebtorId(res.family.members[1].id);
+          if (res.family.members.length > 1) {
+            setDebtorId(res.family.members[1].id);
+          }
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching family:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadFamily();
-  }, []);
+  }, [loadFamily]);
 
-  // ESC key listener for Modals
+  // Keyboard shortcut: ESC to close modals
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -137,12 +153,13 @@ export default function FamilyPage() {
   }, []);
 
   const inviteUrl =
-    typeof window !== 'undefined' && family ? `${window.location.origin}/join/${family.id}` : '';
+    typeof window !== 'undefined' && family?.id ? `${window.location.origin}/join/${family.id}` : '';
 
   const handleCopyInvite = () => {
     if (!inviteUrl) return;
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
+    showToast('✨ Link de convite copiado com sucesso para a área de transferência!');
     setTimeout(() => setCopied(false), 2500);
   };
 
@@ -151,6 +168,8 @@ export default function FamilyPage() {
     const message = encodeURIComponent(
       `Oi! Entre no Family Wallet da nossa família (${family.name}) para acompanharmos nossos gastos juntos:\n${inviteUrl}`
     );
+    navigator.clipboard.writeText(inviteUrl);
+    showToast('✨ Link copiado! Abrindo WhatsApp...');
     window.open(`https://api.whatsapp.com/send?text=${message}`, '_blank');
   };
 
@@ -162,6 +181,7 @@ export default function FamilyPage() {
           text: `Entre no Family Wallet da nossa família para acompanharmos nossos gastos juntos!`,
           url: inviteUrl,
         });
+        showToast('✨ Convite compartilhado com sucesso!');
       } catch {}
     } else {
       handleCopyInvite();
@@ -1031,6 +1051,14 @@ export default function FamilyPage() {
         familyId={family?.id}
         members={family?.members as any}
         onSuccess={loadFamily}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        isVisible={toast.isVisible}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((prev) => ({ ...prev, isVisible: false }))}
       />
     </div>
   );
