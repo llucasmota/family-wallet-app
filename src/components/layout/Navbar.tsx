@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -17,6 +17,31 @@ export interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) => {
   const pathname = usePathname();
   const router = useRouter();
+
+  const [currentMember, setCurrentMember] = useState<{
+    displayName: string;
+    role: 'admin' | 'member' | 'child';
+    avatarKey: string;
+  } | null>(null);
+
+  useEffect(() => {
+    // Dynamically fetch active user's family member profile
+    async function loadProfile() {
+      try {
+        const { getFamilyDataAction } = await import('@/app/actions/family');
+        const res = await getFamilyDataAction();
+        if (res.success && res.family?.members && res.family.members.length > 0) {
+          const first = res.family.members[0];
+          setCurrentMember({
+            displayName: first.displayName,
+            role: first.role as any,
+            avatarKey: first.avatarKey,
+          });
+        }
+      } catch {}
+    }
+    loadProfile();
+  }, [pathname]);
 
   // Detect current locale
   const isPt = !pathname.startsWith('/en');
@@ -58,21 +83,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
                   href={link.href}
                   className={`flex items-center gap-1.5 rounded-m3-full px-4 py-2 text-xs font-medium transition-colors ${
                     isActive
-                      ? 'bg-primary-container text-primary-on-container font-semibold'
+                      ? 'bg-primary/10 text-primary font-bold'
                       : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                   }`}
                 >
                   {link.icon}
-                  {link.label}
+                  <span>{link.label}</span>
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Language Switcher */}
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5">
+          {/* Language Toggle */}
           <button
             onClick={handleToggleLocale}
             title="Alternar Idioma (PT / EN)"
@@ -107,9 +132,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
           <ThemeToggle />
 
           <UserMenu
-            displayName="Minha Conta"
-            role="admin"
-            avatarKey="husband"
+            displayName={currentMember?.displayName || 'Minha Conta'}
+            role={currentMember?.role || 'admin'}
+            avatarKey={currentMember?.avatarKey || 'husband'}
           />
         </div>
       </div>

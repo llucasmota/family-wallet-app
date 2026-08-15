@@ -33,6 +33,8 @@ import {
   updateFamilySettingsAction,
   updateMemberProfileAction,
   updateFamilyCurrencyWithConversionAction,
+  addMemberAction,
+  deleteMemberAction,
 } from '@/app/actions/family';
 import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, applySkinTone } from '@/components/ui/AvatarPresets';
 
@@ -201,19 +203,40 @@ export default function FamilyPage() {
     setIsMemberEditOpen(true);
   };
 
+  const handleOpenAddMember = () => {
+    setEditingMember({
+      id: '',
+      displayName: '',
+      avatarKey: 'husband',
+      color: '#1E6B52',
+      role: (family?.members.length || 0) === 0 ? 'admin' : 'member',
+    });
+    setIsMemberEditOpen(true);
+  };
+
   const handleSaveMemberProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingMember) return;
+    if (!editingMember || !family) return;
 
     setIsSaving(true);
     try {
-      await updateMemberProfileAction({
-        memberId: editingMember.id,
-        displayName: editingMember.displayName,
-        avatarKey: editingMember.avatarKey,
-        color: editingMember.color,
-        role: editingMember.role,
-      });
+      if (editingMember.id) {
+        await updateMemberProfileAction({
+          memberId: editingMember.id,
+          displayName: editingMember.displayName,
+          avatarKey: editingMember.avatarKey,
+          color: editingMember.color,
+          role: editingMember.role,
+        });
+      } else {
+        await addMemberAction({
+          familyId: family.id,
+          displayName: editingMember.displayName,
+          avatarKey: editingMember.avatarKey,
+          color: editingMember.color,
+          role: editingMember.role,
+        });
+      }
       setIsMemberEditOpen(false);
       await loadFamily();
     } catch (err) {
@@ -318,6 +341,15 @@ export default function FamilyPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="tonal"
+              size="sm"
+              onClick={handleOpenAddMember}
+              className="gap-1.5 text-xs"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Membro
+            </Button>
             <Button
               variant="outlined"
               size="sm"
@@ -427,6 +459,20 @@ export default function FamilyPage() {
                 </div>
               </Card>
             </div>
+          ) : !family?.members || family.members.length === 0 ? (
+            <Card variant="elevated" className="flex flex-col items-center justify-center py-10 gap-3 text-center shadow-m3-1">
+              <Avatar name="Você" avatarKey="husband" size="xl" />
+              <div className="flex flex-col gap-1">
+                <h3 className="font-bold text-on-surface text-base">Nenhum membro cadastrado ainda</h3>
+                <p className="text-xs text-on-surface-variant max-w-sm">
+                  Crie o seu perfil de administrador para escolher seu avatar e gerenciar as despesas com a sua família.
+                </p>
+              </div>
+              <Button variant="filled" size="md" onClick={handleOpenAddMember} className="gap-2 mt-2">
+                <Plus className="h-4 w-4" />
+                <span>Criar Meu Perfil de Administrador</span>
+              </Button>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {family?.members.map((member) => (
@@ -447,7 +493,7 @@ export default function FamilyPage() {
                         </Badge>
                       </div>
                       <span className="text-xs text-on-surface-variant mt-0.5">
-                        Avatar: {AVATAR_PRESETS.find((p) => p.key === member.avatarKey)?.name || 'Personalizado'}
+                        Avatar: {AVATAR_PRESETS.find((p) => p.key === member.avatarKey.split(':')[0])?.name || 'Personalizado'}
                       </span>
                     </div>
                   </div>

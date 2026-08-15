@@ -5,17 +5,83 @@ import { families, familyMembers, categories, expenses, expenseSplits, settlemen
 import { eq, and, desc } from 'drizzle-orm';
 import { calculateNetSettlements } from '@/services/expense-calculator';
 import { revalidatePath } from 'next/cache';
+import { createClient } from '@/lib/supabase/server';
+import { DEFAULT_CATEGORIES } from '@/db/default-categories';
 
 export async function getFamilyDataAction() {
   try {
-    // 1. Get first active family (or default family from seed)
-    const [family] = await db.query.families.findMany({
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 1. Get first active family
+    let [family] = await db.query.families.findMany({
       limit: 1,
       with: {
         members: true,
         categories: true,
       },
     });
+
+    // Auto-create family if none exists
+    if (!family) {
+      const [newFam] = await db
+        .insert(families)
+        .values({
+          name: 'Minha Família',
+          currency: 'BRL',
+          createdById: user?.id || null,
+        })
+        .returning();
+
+      // Seed 12 default categories
+      for (const cat of DEFAULT_CATEGORIES) {
+        await db.insert(categories).values({
+          familyId: newFam.id,
+          name: cat.name,
+          icon: cat.icon,
+          color: cat.color,
+          isDefault: true,
+        });
+      }
+
+      // Create first member for the logged in user
+      await db.insert(familyMembers).values({
+        familyId: newFam.id,
+        userId: user?.id || null,
+        displayName: user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Administrador',
+        role: 'admin',
+        avatarKey: 'husband',
+        color: '#1E6B52',
+      });
+
+      const [reloaded] = await db.query.families.findMany({
+        where: eq(families.id, newFam.id),
+        with: {
+          members: true,
+          categories: true,
+        },
+      });
+      family = reloaded;
+    } else if (family.members.length === 0) {
+      // If family exists but has 0 members, create the admin member
+      await db.insert(familyMembers).values({
+        familyId: family.id,
+        userId: user?.id || null,
+        displayName: user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Administrador',
+        role: 'admin',
+        avatarKey: 'husband',
+        color: '#1E6B52',
+      });
+
+      const [reloaded] = await db.query.families.findMany({
+        where: eq(families.id, family.id),
+        with: {
+          members: true,
+          categories: true,
+        },
+      });
+      family = reloaded;
+    }
 
     if (!family) {
       return { success: false, error: 'Nenhuma família encontrada' };
@@ -74,18 +140,54 @@ export async function getFamilyDataAction() {
 
     return {
       success: true,
-      family: {
-        id: family.id,
-        name: family.name,
-        currency: family.currency,
-        members: family.members,
-        categories: family.categories,
-      },
+      family,
       settlements: formattedDebts,
     };
   } catch (error: any) {
-    console.error('Error fetching family data:', error);
-    return { success: false, error: error.message };
+    console.error('Error in getFamilyDataAction:', error);
+    return { success: false, error: error.message || 'Falha ao carregar dados da família' };
+  }
+}
+
+export async function addMemberAction(payload: {
+  familyId: string;
+  displayName: string;
+  avatarKey: string;
+  color?: string;
+  role?: 'admin' | 'member' | 'child';
+}) {
+  try {
+    const [created] = await db
+      .insert(familyMembers)
+      .values({
+        familyId: payload.familyId,
+        displayName: payload.displayName,
+        avatarKey: payload.avatarKey,
+        color: payload.color || '#1E6B52',
+        role: payload.role || 'member',
+      })
+      .returning();
+
+    revalidatePath('/family');
+    revalidatePath('/');
+    revalidatePath('/expenses');
+    return { success: true, member: created };
+  } catch (error: any) {
+    console.error('Error adding member:', error);
+    return { success: false, error: error.message || 'Falha ao adicionar membro' };
+  }
+}
+
+export async function deleteMemberAction(memberId: string) {
+  try {
+    await db.delete(familyMembers).where(eq(familyMembers.id, memberId));
+    revalidatePath('/family');
+    revalidatePath('/');
+    revalidatePath('/expenses');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting member:', error);
+    return { success: false, error: error.message || 'Falha ao excluir membro' };
   }
 }
 
