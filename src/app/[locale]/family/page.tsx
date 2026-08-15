@@ -6,7 +6,20 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { Users, Share2, ArrowRightLeft, Check, Loader2, Plus, Sparkles, X } from 'lucide-react';
+import {
+  Users,
+  Share2,
+  ArrowRightLeft,
+  Check,
+  Loader2,
+  Plus,
+  Sparkles,
+  X,
+  Copy,
+  ExternalLink,
+  MessageCircle,
+  QrCode,
+} from 'lucide-react';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -16,6 +29,7 @@ export default function FamilyPage() {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettling, setIsSettling] = useState(false);
@@ -72,11 +86,12 @@ export default function FamilyPage() {
     loadFamily();
   }, []);
 
-  // ESC key listener for Credit Modal
+  // ESC key listener for Modals
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsCreditModalOpen(false);
+        setIsInviteModalOpen(false);
         setIsAgentOpen(false);
         setIsQuickAddOpen(false);
       }
@@ -85,11 +100,36 @@ export default function FamilyPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const inviteUrl =
+    typeof window !== 'undefined' && family ? `${window.location.origin}/join/${family.id}` : '';
+
   const handleCopyInvite = () => {
-    if (!family) return;
-    navigator.clipboard.writeText(`${window.location.origin}/join/${family.id}`);
+    if (!inviteUrl) return;
+    navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!inviteUrl || !family) return;
+    const message = encodeURIComponent(
+      `Oi! Entre no Family Wallet da nossa família (${family.name}) para acompanharmos nossos gastos juntos:\n${inviteUrl}`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${message}`, '_blank');
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share && inviteUrl && family) {
+      try {
+        await navigator.share({
+          title: `Convite para ${family.name}`,
+          text: `Entre no Family Wallet da nossa família para acompanharmos nossos gastos juntos!`,
+          url: inviteUrl,
+        });
+      } catch {}
+    } else {
+      handleCopyInvite();
+    }
   };
 
   const handleSettleDebt = async (debt: (typeof settlements)[0]) => {
@@ -117,12 +157,11 @@ export default function FamilyPage() {
 
     setIsSettling(true);
     try {
-      // Record a settlement representing the pre-existing starting balance
       await recordSettlementAction({
         familyId: family.id,
         fromMemberId: debtorId,
         toMemberId: creditorId,
-        amount: -parseFloat(creditAmount), // negative reduces creditor's debt / increases debtor's balance
+        amount: -parseFloat(creditAmount),
         note: creditNote || 'Saldo/Crédito Inicial Pré-existente',
       });
       setIsCreditModalOpen(false);
@@ -167,9 +206,14 @@ export default function FamilyPage() {
               <Plus className="h-3.5 w-3.5" />
               Lançar Crédito Inicial
             </Button>
-            <Button variant="tonal" size="sm" onClick={handleCopyInvite} className="gap-2 text-xs">
-              {copied ? <Check className="h-4 w-4 text-primary" /> : <Share2 className="h-4 w-4" />}
-              {copied ? 'Link Copiado!' : 'Convidar Familiar'}
+            <Button
+              variant="filled"
+              size="sm"
+              onClick={() => setIsInviteModalOpen(true)}
+              className="gap-2 text-xs"
+            >
+              <Share2 className="h-4 w-4" />
+              Convidar Familiar
             </Button>
           </div>
         </div>
@@ -290,6 +334,105 @@ export default function FamilyPage() {
         </div>
       </main>
 
+      {/* Dedicated Invite Modal */}
+      {isInviteModalOpen && (
+        <div
+          onClick={() => setIsInviteModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <Card
+            variant="elevated"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md shadow-m3-3 flex flex-col gap-5"
+          >
+            <div className="flex items-center justify-between border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-m3-full bg-primary-container text-primary">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-on-surface">Convidar Familiar</h3>
+                  <p className="text-xs text-on-surface-variant">Compartilhe o acesso ao Family Wallet</p>
+                </div>
+              </div>
+              <Button variant="text" size="icon" onClick={() => setIsInviteModalOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-3 text-xs">
+              <p className="text-on-surface-variant leading-relaxed">
+                Envie o link abaixo para seu cônjuge ou familiar. Ao acessar, a pessoa escolherá seu nome e avatar para entrar no grupo <strong>{family?.name}</strong>:
+              </p>
+
+              {/* Link Box with Copy Button */}
+              <div className="flex items-center gap-2 rounded-m3-md border border-outline-variant/40 bg-surface-container dark:bg-[#141816] p-2.5">
+                <input
+                  type="text"
+                  readOnly
+                  value={inviteUrl}
+                  className="w-full bg-transparent text-xs text-on-surface font-mono focus:outline-none select-all truncate"
+                />
+                <Button
+                  variant="filled"
+                  size="sm"
+                  onClick={handleCopyInvite}
+                  className="gap-1.5 shrink-0 h-8 px-3 text-xs"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-white" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Quick Share Buttons */}
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button
+                  variant="tonal"
+                  size="md"
+                  onClick={handleShareWhatsApp}
+                  className="gap-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Enviar no WhatsApp
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  size="md"
+                  onClick={handleNativeShare}
+                  className="gap-2 text-xs"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Compartilhar
+                </Button>
+              </div>
+
+              {/* Preview Link */}
+              <div className="border-t border-outline-variant/20 dark:border-white/[0.06] pt-3 text-center">
+                <a
+                  href={`/join/${family?.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Visualizar tela de convite
+                </a>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Starting Credit Balance Modal */}
       {isCreditModalOpen && (
         <div
@@ -371,7 +514,12 @@ export default function FamilyPage() {
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-outline-variant/20 dark:border-white/[0.06]">
-                <Button variant="text" size="sm" type="button" onClick={() => setIsCreditModalOpen(false)}>
+                <Button
+                  variant="text"
+                  size="sm"
+                  type="button"
+                  onClick={() => setIsCreditModalOpen(false)}
+                >
                   Cancelar
                 </Button>
                 <Button variant="filled" size="md" type="submit" disabled={isSettling}>

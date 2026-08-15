@@ -176,20 +176,21 @@ export function extractWithSmartNLP(text: string, context: FamilyContext, client
   }
 
   // 5. EXTRACT SMART DESCRIPTION
-  let description = clean;
+  // Remove filler prefixes first
+  let cleanedForDesc = clean
+    .replace(/^acabei de (?:comprar|pagar|gastar)\s*/i, '')
+    .replace(/^(?:comprei|paguei|gastei)\s*/i, '')
+    .replace(/(?:R\$|r\$|\$)\s*\d+(?:[.,]\d{1,2})?/gi, '')
+    .replace(/\b\d+(?:[.,]\d{1,2})?\s*(?:reais|pila|conto)\b/gi, '')
+    .replace(/\b\d+\s*(?:x|vezes|parcelas)\b/gi, '')
+    .replace(/\bdivisão.*$/i, '')
+    .replace(/\bdividir.*$/i, '')
+    .trim();
 
-  // Look for "em cerveja", "de pizza", "no mercado"
-  const itemMatch = clean.match(/(?:em|de|no|na|com)\s+([a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÓÔÕÚÇ\s]{3,25})/i);
-  if (itemMatch && itemMatch[1]) {
-    description = itemMatch[1].replace(/divisão|dividir|parcelado|em\s*\d+x/gi, '').trim();
-  } else {
-    description = clean
-      .replace(/(?:R\$|r\$|\$)?\s*\d+(?:[.,]\d{1,2})?/, '')
-      .replace(/divisão.*$/i, '')
-      .replace(/(\d+)\s*(?:x|vezes|parcelas)/i, '')
-      .replace(/acabei de comprar|comprei|paguei/i, '')
-      .trim();
-  }
+  // Strip leading preposition e.g. "em cerveja" -> "cerveja", "no mercado" -> "Mercado"
+  cleanedForDesc = cleanedForDesc.replace(/^(?:em|de|no|na|com)\s+/i, '').trim();
+
+  let description = cleanedForDesc;
 
   if (!description || description.length < 3) {
     description = categoryName || 'Despesa Lançada';

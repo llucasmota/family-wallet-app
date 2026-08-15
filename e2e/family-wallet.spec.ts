@@ -12,6 +12,7 @@ test.describe('Family Wallet E2E Flows', () => {
     await expect(page.getByRole('link', { name: /Visão Geral/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Despesas/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Família/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Categorias/i })).toBeVisible();
 
     // Check action buttons
     await expect(page.getByRole('button', { name: /Modo Agente/i })).toBeVisible();
@@ -36,16 +37,31 @@ test.describe('Family Wallet E2E Flows', () => {
     await expect(page.getByRole('heading', { name: /Novo Lançamento/i })).not.toBeVisible();
   });
 
-  test('should navigate to Family page and display members and settlement matrix', async ({ page }) => {
+  test('should navigate to Family page and open Invite Modal with WhatsApp share', async ({ page }) => {
     await page.goto('/family');
 
     // Check page title and settlement card
     await expect(page.getByText(/Membros da Família/i)).toBeVisible();
     await expect(page.getByText(/Acerto de Contas do Mês/i)).toBeVisible();
 
-    // Check buttons
-    await expect(page.getByRole('button', { name: /Lançar Crédito Inicial/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Convidar Familiar/i })).toBeVisible();
+    // Click "Convidar Familiar"
+    await page.getByRole('button', { name: /Convidar Familiar/i }).click();
+
+    // Check that Invite Modal opened
+    await expect(page.getByRole('heading', { name: /Convidar Familiar/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Copiar/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Enviar no WhatsApp/i })).toBeVisible();
+
+    // Close via ESC
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: /Convidar Familiar/i })).not.toBeVisible();
+  });
+
+  test('should navigate to Categories page and display category grid and new category button', async ({ page }) => {
+    await page.goto('/categories');
+
+    await expect(page.getByRole('heading', { name: /Categorias de Gastos/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Nova Categoria/i })).toBeVisible();
   });
 
   test('should navigate to Expenses page and allow filtering and search', async ({ page }) => {
