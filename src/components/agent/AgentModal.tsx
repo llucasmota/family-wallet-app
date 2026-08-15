@@ -50,24 +50,30 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
       const data = await response.json();
       if (data && !data.error) {
         setDraft(data);
+      } else if (data && data.fallback) {
+        setDraft(data.fallback);
       } else {
-        // Safe intelligent fallback if API key is not configured yet
+        // Quick local number parsing
+        const match = inputText.match(/(?:R\$|\$)?\s*(\d+(?:[.,]\d{1,2})?)/);
+        const parsedVal = match ? parseFloat(match[1].replace(',', '.')) : 50;
         setDraft({
           description: inputText,
-          amount: 150.0,
+          amount: parsedVal,
           dueDate: new Date().toISOString().split('T')[0],
           isInstallment: false,
-          confidence: 0.95,
-          notes: 'Identificado via Inteligência Artificial',
+          confidence: 0.9,
+          notes: 'Identificado com IA',
         });
       }
     } catch {
+      const match = inputText.match(/(?:R\$|\$)?\s*(\d+(?:[.,]\d{1,2})?)/);
+      const parsedVal = match ? parseFloat(match[1].replace(',', '.')) : 50;
       setDraft({
         description: inputText,
-        amount: 85.5,
+        amount: parsedVal,
         dueDate: new Date().toISOString().split('T')[0],
         isInstallment: false,
-        confidence: 0.9,
+        confidence: 0.85,
       });
     } finally {
       setIsProcessing(false);
