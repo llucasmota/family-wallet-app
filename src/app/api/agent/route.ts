@@ -6,7 +6,7 @@ import { db } from '@/db';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, text, imageBase64, mimeType, audioBase64 } = body;
+    const { type, text, imageBase64, mimeType, audioBase64, clientDate } = body;
 
     // Load actual family members and categories from database
     const [family] = await db.query.families.findMany({
@@ -17,8 +17,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const todayLocal = clientDate || new Date().toISOString().split('T')[0];
+
     const familyContext: FamilyContext = {
-      currentDate: new Date().toISOString().split('T')[0],
+      currentDate: todayLocal,
       members: family?.members?.map((m) => ({ id: m.id, name: m.displayName, role: m.role })) || [
         { id: 'husband-1', name: 'Lucas Mota', role: 'admin' },
         { id: 'wife-1', name: 'Esposa', role: 'member' },

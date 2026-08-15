@@ -40,11 +40,13 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
     if (!inputText.trim()) return;
     setIsProcessing(true);
 
+    const clientDate = new Date().toLocaleDateString('sv-SE');
+
     try {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'text', text: inputText }),
+        body: JSON.stringify({ type: 'text', text: inputText, clientDate }),
       });
 
       const data = await response.json();
