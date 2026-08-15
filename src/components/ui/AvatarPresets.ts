@@ -2,16 +2,15 @@ export interface SkinTone {
   key: string;
   name: string;
   emoji: string;
-  modifier: string;
 }
 
 export const SKIN_TONES: SkinTone[] = [
-  { key: 'default', name: 'Original', emoji: '🟡', modifier: '' },
-  { key: 'light', name: 'Pele Clara', emoji: '🏻', modifier: '\u{1F3FB}' },
-  { key: 'medium_light', name: 'Pele Média-Clara', emoji: '🏼', modifier: '\u{1F3FC}' },
-  { key: 'medium', name: 'Pele Parda / Média', emoji: '🏽', modifier: '\u{1F3FD}' },
-  { key: 'medium_dark', name: 'Pele Negra', emoji: '🏾', modifier: '\u{1F3FE}' },
-  { key: 'dark', name: 'Pele Negra Retinta', emoji: '🏿', modifier: '\u{1F3FF}' },
+  { key: 'default', name: 'Original', emoji: '🟡' },
+  { key: 'light', name: 'Pele Clara', emoji: '🏻' },
+  { key: 'medium_light', name: 'Pele Média-Clara', emoji: '🏼' },
+  { key: 'medium', name: 'Pele Parda / Média', emoji: '🏽' },
+  { key: 'medium_dark', name: 'Pele Negra', emoji: '🏾' },
+  { key: 'dark', name: 'Pele Negra Retinta', emoji: '🏿' },
 ];
 
 export interface AvatarPreset {
@@ -22,27 +21,44 @@ export interface AvatarPreset {
   baseEmoji: string;
   description: string;
   supportsSkinTone?: boolean;
+  skinToneMap?: Record<string, string>;
 }
 
 export const AVATAR_PRESETS: AvatarPreset[] = [
   // Adultos
   {
     key: 'husband',
-    name: 'Esposo / Homem Executivo',
+    name: 'Esposo / Executivo',
     category: 'adult',
     bgColor: '#1E6B52',
     baseEmoji: '👨‍💼',
     description: 'Estilo executivo moderno e focado',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👨‍💼',
+      light: '👨🏻‍💼',
+      medium_light: '👨🏼‍💼',
+      medium: '👨🏽‍💼',
+      medium_dark: '👨🏾‍💼',
+      dark: '👨🏿‍💼',
+    },
   },
   {
     key: 'wife',
-    name: 'Esposa / Mulher Executiva',
+    name: 'Esposa / Executiva',
     category: 'adult',
     bgColor: '#3D6473',
     baseEmoji: '👩‍💼',
     description: 'Estilo executiva elegante e dinâmica',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👩‍💼',
+      light: '👩🏻‍💼',
+      medium_light: '👩🏼‍💼',
+      medium: '👩🏽‍💼',
+      medium_dark: '👩🏾‍💼',
+      dark: '👩🏿‍💼',
+    },
   },
   {
     key: 'man_casual',
@@ -52,33 +68,65 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '🧔',
     description: 'Estilo casual urbano',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '🧔',
+      light: '🧔🏻',
+      medium_light: '🧔🏼',
+      medium: '🧔🏽',
+      medium_dark: '🧔🏾',
+      dark: '🧔🏿',
+    },
   },
   {
     key: 'woman_casual',
-    name: 'Mulher Cacheada / Trançada',
+    name: 'Mulher Cacheada',
     category: 'adult',
     bgColor: '#7C3AED',
-    baseEmoji: '👩‍🦱',
+    baseEmoji: '👩',
     description: 'Estilo autêntico e vibrante',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👩',
+      light: '👩🏻',
+      medium_light: '👩🏼',
+      medium: '👩🏽',
+      medium_dark: '👩🏾',
+      dark: '👩🏿',
+    },
   },
   {
-    key: 'woman_curly',
-    name: 'Mulher com Cabelo Afro',
-    category: 'adult',
-    bgColor: '#D97706',
-    baseEmoji: '👩🏾‍🦱',
-    description: 'Beleza e identidade negra',
-    supportsSkinTone: true,
-  },
-  {
-    key: 'man_curly',
-    name: 'Homem com Cabelo Afro',
+    key: 'man_afro',
+    name: 'Homem Cabelo Afro',
     category: 'adult',
     bgColor: '#059669',
-    baseEmoji: '👨🏾‍🦱',
+    baseEmoji: '👨‍🦱',
     description: 'Estilo e representatividade',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👨‍🦱',
+      light: '👨🏻‍🦱',
+      medium_light: '👨🏼‍🦱',
+      medium: '👨🏽‍🦱',
+      medium_dark: '👨🏾‍🦱',
+      dark: '👨🏿‍🦱',
+    },
+  },
+  {
+    key: 'woman_afro',
+    name: 'Mulher Cabelo Afro',
+    category: 'adult',
+    bgColor: '#D97706',
+    baseEmoji: '👩‍🦱',
+    description: 'Beleza e identidade',
+    supportsSkinTone: true,
+    skinToneMap: {
+      default: '👩‍🦱',
+      light: '👩🏻‍🦱',
+      medium_light: '👩🏼‍🦱',
+      medium: '👩🏽‍🦱',
+      medium_dark: '👩🏾‍🦱',
+      dark: '👩🏿‍🦱',
+    },
   },
 
   // Jovens & Crianças
@@ -90,6 +138,14 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '👦',
     description: 'Aventureiro e curioso',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👦',
+      light: '👦🏻',
+      medium_light: '👦🏼',
+      medium: '👦🏽',
+      medium_dark: '👦🏾',
+      dark: '👦🏿',
+    },
   },
   {
     key: 'girl_1',
@@ -99,6 +155,14 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '👧',
     description: 'Estudiosa e cheia de energia',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👧',
+      light: '👧🏻',
+      medium_light: '👧🏼',
+      medium: '👧🏽',
+      medium_dark: '👧🏾',
+      dark: '👧🏿',
+    },
   },
   {
     key: 'baby',
@@ -108,6 +172,14 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '👶',
     description: 'O caçula que alegra a casa',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👶',
+      light: '👶🏻',
+      medium_light: '👶🏼',
+      medium: '👶🏽',
+      medium_dark: '👶🏾',
+      dark: '👶🏿',
+    },
   },
 
   // Terceira Idade
@@ -117,8 +189,16 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     category: 'seniors',
     bgColor: '#4B5563',
     baseEmoji: '👴',
-    description: 'Experiência e acolhimento familiar',
+    description: 'Experiência e acolhimento',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👴',
+      light: '👴🏻',
+      medium_light: '👴🏼',
+      medium: '👴🏽',
+      medium_dark: '👴🏾',
+      dark: '👴🏿',
+    },
   },
   {
     key: 'grandma',
@@ -128,9 +208,17 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '👵',
     description: 'Amor, receitas e carinho',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '👵',
+      light: '👵🏻',
+      medium_light: '👵🏼',
+      medium: '👵🏽',
+      medium_dark: '👵🏾',
+      dark: '👵🏿',
+    },
   },
 
-  // Pets da Família
+  // Pets
   {
     key: 'dog',
     name: 'Cachorrinho',
@@ -159,6 +247,14 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '🧑‍🚀',
     description: 'Entusiasta do futuro e tecnologia',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '🧑‍🚀',
+      light: '🧑🏻‍🚀',
+      medium_light: '🧑🏼‍🚀',
+      medium: '🧑🏽‍🚀',
+      medium_dark: '🧑🏾‍🚀',
+      dark: '🧑🏿‍🚀',
+    },
   },
   {
     key: 'hero',
@@ -168,24 +264,29 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     baseEmoji: '🦸',
     description: 'O guardião do orçamento',
     supportsSkinTone: true,
+    skinToneMap: {
+      default: '🦸',
+      light: '🦸🏻',
+      medium_light: '🦸🏼',
+      medium: '🦸🏽',
+      medium_dark: '🦸🏾',
+      dark: '🦸🏿',
+    },
   },
 ];
 
 /**
- * Applies a Fitzpatrick skin tone modifier to human emojis
+ * Gets the exact character emoji with skin tone applied
  */
-export function applySkinTone(baseEmoji: string, skinToneModifier?: string): string {
-  if (!skinToneModifier) return baseEmoji;
+export function getAdaptedEmoji(baseKey: string, skinToneKey: string = 'default'): string {
+  const preset = AVATAR_PRESETS.find((p) => p.key === baseKey);
+  if (!preset) return '👤';
 
-  // Handle multi-character ZWJ emojis (e.g. 👨‍💼: 👨 + ZWJ + 💼)
-  const codePoints = Array.from(baseEmoji);
-  if (codePoints.length === 0) return baseEmoji;
+  if (!preset.supportsSkinTone || !preset.skinToneMap) {
+    return preset.baseEmoji;
+  }
 
-  // Insert modifier right after the person base emoji (first glyph)
-  const first = codePoints[0];
-  const rest = codePoints.slice(1).join('');
-
-  return `${first}${skinToneModifier}${rest}`;
+  return preset.skinToneMap[skinToneKey] || preset.skinToneMap['default'] || preset.baseEmoji;
 }
 
 export const FAMILY_EMBLEMS = [

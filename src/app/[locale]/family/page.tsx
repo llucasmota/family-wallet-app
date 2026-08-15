@@ -37,7 +37,7 @@ import {
   addMemberAction,
   deleteMemberAction,
 } from '@/app/actions/family';
-import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, applySkinTone } from '@/components/ui/AvatarPresets';
+import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, getAdaptedEmoji } from '@/components/ui/AvatarPresets';
 
 export default function FamilyPage() {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
@@ -152,37 +152,45 @@ export default function FamilyPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const inviteUrl =
-    typeof window !== 'undefined' && family?.id ? `${window.location.origin}/join/${family.id}` : '';
+  const getEffectiveInviteUrl = useCallback(() => {
+    if (typeof window === 'undefined') return '';
+    if (family?.id) return `${window.location.origin}/join/${family.id}`;
+    return `${window.location.origin}/join`;
+  }, [family?.id]);
 
   const handleCopyInvite = () => {
-    if (!inviteUrl) return;
-    navigator.clipboard.writeText(inviteUrl);
+    const url = getEffectiveInviteUrl();
+    if (!url) return;
+    navigator.clipboard.writeText(url);
     setCopied(true);
     showToast('✨ Link de convite copiado com sucesso para a área de transferência!');
     setTimeout(() => setCopied(false), 2500);
   };
 
   const handleShareWhatsApp = () => {
-    if (!inviteUrl || !family) return;
+    const url = getEffectiveInviteUrl();
+    if (!url) return;
     const message = encodeURIComponent(
-      `Oi! Entre no Family Wallet da nossa família (${family.name}) para acompanharmos nossos gastos juntos:\n${inviteUrl}`
+      `Oi! Entre no Family Wallet da nossa família (${family?.name || 'Família'}) para acompanharmos nossos gastos juntos:\n${url}`
     );
-    navigator.clipboard.writeText(inviteUrl);
+    navigator.clipboard.writeText(url);
     showToast('✨ Link copiado! Abrindo WhatsApp...');
     window.open(`https://api.whatsapp.com/send?text=${message}`, '_blank');
   };
 
   const handleNativeShare = async () => {
-    if (navigator.share && inviteUrl && family) {
+    const url = getEffectiveInviteUrl();
+    if (navigator.share && url) {
       try {
         await navigator.share({
-          title: `Convite para ${family.name}`,
+          title: `Convite para ${family?.name || 'Family Wallet'}`,
           text: `Entre no Family Wallet da nossa família para acompanharmos nossos gastos juntos!`,
-          url: inviteUrl,
+          url: url,
         });
         showToast('✨ Convite compartilhado com sucesso!');
-      } catch {}
+      } catch {
+        handleCopyInvite();
+      }
     } else {
       handleCopyInvite();
     }
@@ -241,6 +249,20 @@ export default function FamilyPage() {
     setIsSaving(true);
     try {
       if (editingMember.id) {
+        // Optimistic UI update
+        const updatedMembers = family.members.map((m) =>
+          m.id === editingMember.id
+            ? {
+                ...m,
+                displayName: editingMember.displayName,
+                avatarKey: editingMember.avatarKey,
+                color: editingMember.color,
+                role: editingMember.role,
+              }
+            : m
+        );
+        setFamily({ ...family, members: updatedMembers });
+
         await updateMemberProfileAction({
           memberId: editingMember.id,
           displayName: editingMember.displayName,
@@ -248,6 +270,7 @@ export default function FamilyPage() {
           color: editingMember.color,
           role: editingMember.role,
         });
+        showToast('✨ Perfil atualizado com sucesso!');
       } else {
         await addMemberAction({
           familyId: family.id,
@@ -256,11 +279,13 @@ export default function FamilyPage() {
           color: editingMember.color,
           role: editingMember.role,
         });
+        showToast('✨ Novo membro adicionado com sucesso!');
       }
       setIsMemberEditOpen(false);
       await loadFamily();
     } catch (err) {
       console.error(err);
+      showToast('Erro ao salvar membro', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -697,7 +722,7 @@ export default function FamilyPage() {
                 <div className="flex flex-col">
                   <span className="font-bold text-base text-on-surface">{editingMember.displayName || 'Nome'}</span>
                   <span className="text-xs text-on-surface-variant">
-                    {AVATAR_PRESETS.find((p) => p.key === editingMember.avatarKey)?.name}
+                    {AVATAR_PRESETS.find((p) => p.key === editingMember.avatarKey.split(':')[0])?.name}
                   </span>
                   <span className="text-[11px] text-primary mt-0.5">
                     {editingMember.role === 'admin' ? 'Administrador Familiar' : 'Membro'}
@@ -721,7 +746,7 @@ export default function FamilyPage() {
               {/* Skin Tone Selector */}
               <div>
                 <label className="font-semibold text-on-surface-variant mb-1.5 block">
-                  Tom de Pele
+                  Tom de Pele (O avatar se adapta automaticamente)
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {SKIN_TONES.map((tone) => {
@@ -757,18 +782,15 @@ export default function FamilyPage() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
                   {AVATAR_PRESETS.map((preset) => {
                     const [currentBaseKey, currentToneKey] = (editingMember.avatarKey || 'husband').split(':');
-                    const currentTone = SKIN_TONES.find((s) => s.key === currentToneKey);
                     const isSelected = currentBaseKey === preset.key;
-                    const displayEmoji = preset.supportsSkinTone && currentTone?.modifier
-                      ? applySkinTone(preset.baseEmoji, currentTone.modifier)
-                      : preset.baseEmoji;
+                    const displayEmoji = getAdaptedEmoji(preset.key, currentToneKey || 'default');
 
                     return (
                       <button
                         key={preset.key}
                         type="button"
                         onClick={() => {
-                          const newKey = currentToneKey ? `${preset.key}:${currentToneKey}` : preset.key;
+                          const newKey = currentToneKey && currentToneKey !== 'default' ? `${preset.key}:${currentToneKey}` : preset.key;
                           setEditingMember({
                             ...editingMember,
                             avatarKey: newKey,
@@ -880,7 +902,7 @@ export default function FamilyPage() {
                 <input
                   type="text"
                   readOnly
-                  value={inviteUrl}
+                  value={getEffectiveInviteUrl()}
                   className="w-full bg-transparent text-xs text-on-surface font-mono focus:outline-none select-all truncate"
                 />
                 <Button
@@ -929,12 +951,12 @@ export default function FamilyPage() {
               {/* Preview Link */}
               <div className="border-t border-outline-variant/20 dark:border-white/[0.06] pt-3 text-center">
                 <a
-                  href={`/join/${family?.id}`}
+                  href={getEffectiveInviteUrl() || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold"
                 >
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                   Visualizar tela de convite
                 </a>
               </div>

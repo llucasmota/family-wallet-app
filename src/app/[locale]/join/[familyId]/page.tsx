@@ -8,7 +8,7 @@ import { Users, Check, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { getFamilyDataAction } from '@/app/actions/family';
 import { joinFamilyAction } from '@/app/actions/auth';
-import { AVATAR_PRESETS, SKIN_TONES, applySkinTone } from '@/components/ui/AvatarPresets';
+import { AVATAR_PRESETS, SKIN_TONES, getAdaptedEmoji } from '@/components/ui/AvatarPresets';
 
 export default function JoinFamilyPage() {
   const params = useParams();
@@ -154,18 +154,15 @@ export default function JoinFamilyPage() {
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
               {AVATAR_PRESETS.map((preset) => {
                 const [currentBaseKey, currentToneKey] = (avatarKey || 'wife').split(':');
-                const currentTone = SKIN_TONES.find((s) => s.key === currentToneKey);
                 const isSelected = currentBaseKey === preset.key;
-                const displayEmoji = preset.supportsSkinTone && currentTone?.modifier
-                  ? applySkinTone(preset.baseEmoji, currentTone.modifier)
-                  : preset.baseEmoji;
+                const displayEmoji = getAdaptedEmoji(preset.key, currentToneKey || 'default');
 
                 return (
                   <button
                     key={preset.key}
                     type="button"
                     onClick={() => {
-                      const newKey = currentToneKey ? `${preset.key}:${currentToneKey}` : preset.key;
+                      const newKey = currentToneKey && currentToneKey !== 'default' ? `${preset.key}:${currentToneKey}` : preset.key;
                       setAvatarKey(newKey);
                     }}
                     className={`flex flex-col items-center p-2 rounded-m3-md border transition-all text-center gap-1 ${

@@ -2,7 +2,7 @@ import React from 'react';
 import { User, Heart, Baby, Shield } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { AVATAR_PRESETS, SKIN_TONES, applySkinTone } from './AvatarPresets';
+import { AVATAR_PRESETS, SKIN_TONES, getAdaptedEmoji } from './AvatarPresets';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   role?: 'admin' | 'member' | 'child';
@@ -31,14 +31,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   // Parse skin tone if encoded like "husband:medium_dark"
   const [baseKey, skinToneKey] = (avatarKey || 'husband').split(':');
   const preset = AVATAR_PRESETS.find((p) => p.key === baseKey);
-  const skinTone = SKIN_TONES.find((s) => s.key === skinToneKey);
-
   const bgColor = color || preset?.bgColor || '#1E6B52';
-  const renderedEmoji = preset
-    ? preset.supportsSkinTone && skinTone?.modifier
-      ? applySkinTone(preset.baseEmoji, skinTone.modifier)
-      : preset.baseEmoji
-    : null;
+  const renderedEmoji = getAdaptedEmoji(baseKey, skinToneKey || 'default');
 
   const getRoleIcon = () => {
     if (baseKey === 'wife' || baseKey === 'woman_casual' || baseKey === 'woman_curly')

@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { families, familyMembers, categories, expenses, expenseSplits, settlements } from '@/db/schema';
+import { families, familyMembers, categories, expenses, expenseSplits, settlements, users } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { calculateNetSettlements } from '@/services/expense-calculator';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +12,22 @@ export async function getFamilyDataAction() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Ensure user row exists in public.users to prevent foreign key errors
+    if (user) {
+      try {
+        await db
+          .insert(users)
+          .values({
+            id: user.id,
+            email: user.email || 'user@familywallet.com',
+            name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'Usuário',
+          })
+          .onConflictDoNothing();
+      } catch (e) {
+        console.error('Error ensuring user row in public.users:', e);
+      }
+    }
 
     // 1. Get first active family
     let [family] = await db.query.families.findMany({
