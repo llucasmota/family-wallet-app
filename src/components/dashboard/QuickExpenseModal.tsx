@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { CurrencyInput } from '../ui/CurrencyInput';
 import { X, Layers, Repeat, Users, Check, Loader2, ArrowRightLeft, DollarSign } from 'lucide-react';
 import { addExpenseAction } from '@/app/actions/expenses';
 import { recordSettlementAction } from '@/app/actions/family';
@@ -242,16 +243,13 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-on-surface-variant">Valor do Crédito (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Ex: 500,00"
-                  className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
-                />
+                <label className="text-xs font-semibold text-on-surface-variant">Valor do Crédito</label>
+                <div className="mt-1">
+                  <CurrencyInput
+                    value={amount}
+                    onChange={(val) => setAmount(val > 0 ? val.toString() : '')}
+                  />
+                </div>
               </div>
 
               <div>
@@ -278,23 +276,17 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Ex: Conta de Energia, Aluguel, Mercado"
-                    className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none cursor-pointer"
+                    className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-on-surface-variant">Valor (R$)</label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">R$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
+                    <label className="text-xs font-semibold text-on-surface-variant">Valor</label>
+                    <div className="mt-1">
+                      <CurrencyInput
                         value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="0,00"
-                        className="w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-8 pr-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
+                        onChange={(val) => setAmount(val > 0 ? val.toString() : '')}
                       />
                     </div>
                   </div>

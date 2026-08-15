@@ -170,3 +170,65 @@ export async function updateMemberProfileAction(payload: {
     return { success: false, error: error.message || 'Falha ao atualizar perfil do membro' };
   }
 }
+
+export async function updateFamilyCurrencyWithConversionAction(payload: {
+  familyId: string;
+  newCurrency: string;
+  mode: 'nominal' | 'convert_rate';
+  exchangeRate?: number;
+}) {
+  try {
+    return await db.transaction(async (tx) => {
+      // 1. Update family currency
+      await tx
+        .update(families)
+        .set({ currency: payload.newCurrency })
+        .where(eq(families.id, payload.familyId));
+
+      // 2. If convert_rate is selected, adjust historical records
+      if (payload.mode === 'convert_rate' && payload.exchangeRate && payload.exchangeRate > 0) {
+        const rate = payload.exchangeRate;
+
+        // Convert expenses and splits
+        const familyExpenses = await tx.query.expenses.findMany({
+          where: eq(expenses.familyId, payload.familyId),
+          with: { splits: true },
+        });
+
+        for (const exp of familyExpenses) {
+          const newTotal = (parseFloat(exp.amount) * rate).toFixed(2);
+          await tx.update(expenses).set({ amount: newTotal }).where(eq(expenses.id, exp.id));
+
+          for (const split of exp.splits) {
+            const newSplitAmount = (parseFloat(split.computedAmount) * rate).toFixed(2);
+            await tx
+              .update(expenseSplits)
+              .set({ computedAmount: newSplitAmount })
+              .where(eq(expenseSplits.id, split.id));
+          }
+        }
+
+        // Convert settlements
+        const familySettlements = await tx.query.settlements.findMany({
+          where: eq(settlements.familyId, payload.familyId),
+        });
+
+        for (const set of familySettlements) {
+          const newSetAmount = (parseFloat(set.amount) * rate).toFixed(2);
+          await tx
+            .update(settlements)
+            .set({ amount: newSetAmount })
+            .where(eq(settlements.id, set.id));
+        }
+      }
+
+      revalidatePath('/');
+      revalidatePath('/expenses');
+      revalidatePath('/family');
+      return { success: true };
+    });
+  } catch (error: any) {
+    console.error('Error updating currency with conversion:', error);
+    return { success: false, error: error.message || 'Falha ao atualizar moeda do grupo' };
+  }
+}

@@ -21,17 +21,20 @@ import {
   Pencil,
   Sparkles,
   Home,
+  AlertCircle,
 } from 'lucide-react';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import {
   getFamilyDataAction,
   recordSettlementAction,
   updateFamilySettingsAction,
   updateMemberProfileAction,
+  updateFamilyCurrencyWithConversionAction,
 } from '@/app/actions/family';
-import { AVATAR_PRESETS, FAMILY_EMBLEMS } from '@/components/ui/AvatarPresets';
+import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, applySkinTone } from '@/components/ui/AvatarPresets';
 
 export default function FamilyPage() {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
@@ -48,6 +51,8 @@ export default function FamilyPage() {
   // Group settings state
   const [groupName, setGroupName] = useState('');
   const [groupCurrency, setGroupCurrency] = useState('BRL');
+  const [conversionMode, setConversionMode] = useState<'nominal' | 'convert_rate'>('nominal');
+  const [exchangeRate, setExchangeRate] = useState('1');
 
   // Selected member to edit
   const [editingMember, setEditingMember] = useState<{
@@ -167,11 +172,21 @@ export default function FamilyPage() {
 
     setIsSaving(true);
     try {
+      if (groupCurrency !== family.currency) {
+        await updateFamilyCurrencyWithConversionAction({
+          familyId: family.id,
+          newCurrency: groupCurrency,
+          mode: conversionMode,
+          exchangeRate: conversionMode === 'convert_rate' ? parseFloat(exchangeRate) || 1 : 1,
+        });
+      }
+
       await updateFamilySettingsAction({
         familyId: family.id,
         name: groupName.trim(),
         currency: groupCurrency,
       });
+
       setIsGroupSettingsOpen(false);
       await loadFamily();
     } catch (err) {
@@ -500,6 +515,67 @@ export default function FamilyPage() {
                 </select>
               </div>
 
+              {/* Currency Change Conversion Mode Selection */}
+              {groupCurrency !== (family?.currency || 'BRL') && (
+                <div className="rounded-m3-md border border-amber-500/30 bg-amber-500/10 p-3.5 flex flex-col gap-2.5 text-xs text-on-surface">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-500">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>Como tratar os lançamentos anteriores?</span>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="convMode"
+                        checked={conversionMode === 'nominal'}
+                        onChange={() => setConversionMode('nominal')}
+                        className="mt-0.5 accent-primary cursor-pointer"
+                      />
+                      <div>
+                        <strong className="block font-semibold">Troca Nominal Simples</strong>
+                        <span className="text-[11px] text-on-surface-variant">
+                          Manter os valores numéricos como estão (Ex: R$ 100,00 se torna {groupCurrency === 'USD' ? '$ 100,00' : '€ 100,00'}).
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="convMode"
+                        checked={conversionMode === 'convert_rate'}
+                        onChange={() => setConversionMode('convert_rate')}
+                        className="mt-0.5 accent-primary cursor-pointer"
+                      />
+                      <div>
+                        <strong className="block font-semibold">Converter pela Cotação Cambial</strong>
+                        <span className="text-[11px] text-on-surface-variant">
+                          Recalcular todo o histórico com a taxa de câmbio informada.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {conversionMode === 'convert_rate' && (
+                    <div className="mt-1 pt-2 border-t border-amber-500/20">
+                      <label className="font-semibold text-on-surface-variant block mb-1">
+                        Taxa de Câmbio / Multiplicador
+                      </label>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        required
+                        value={exchangeRate}
+                        onChange={(e) => setExchangeRate(e.target.value)}
+                        placeholder="Ex: 0.18 (de BRL para USD) ou 5.60 (de USD para BRL)"
+                        className="w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-outline-variant/20 dark:border-white/[0.06]">
                 <Button
                   variant="text"
@@ -576,35 +652,76 @@ export default function FamilyPage() {
                 />
               </div>
 
+              {/* Skin Tone Selector */}
+              <div>
+                <label className="font-semibold text-on-surface-variant mb-1.5 block">
+                  Tom de Pele
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {SKIN_TONES.map((tone) => {
+                    const [baseKey, currentToneKey] = (editingMember.avatarKey || 'husband').split(':');
+                    const isSelected = (currentToneKey || 'default') === tone.key;
+                    return (
+                      <button
+                        key={tone.key}
+                        type="button"
+                        onClick={() => {
+                          const newKey = tone.key === 'default' ? baseKey : `${baseKey}:${tone.key}`;
+                          setEditingMember({ ...editingMember, avatarKey: newKey });
+                        }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-m3-md border text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/40'
+                            : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className="text-sm">{tone.emoji}</span>
+                        <span className="text-[11px]">{tone.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Avatar Gallery */}
               <div>
                 <label className="font-semibold text-on-surface-variant mb-2 block">
                   Galeria de Personagens IA
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
-                  {AVATAR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.key}
-                      type="button"
-                      onClick={() =>
-                        setEditingMember({
-                          ...editingMember,
-                          avatarKey: preset.key,
-                          color: preset.bgColor,
-                        })
-                      }
-                      className={`flex flex-col items-center p-2 rounded-m3-md border transition-all text-center gap-1 ${
-                        editingMember.avatarKey === preset.key
-                          ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-m3-1'
-                          : 'border-outline-variant/30 hover:bg-surface-container'
-                      }`}
-                    >
-                      <span className="text-2xl">{preset.emoji}</span>
-                      <span className="text-[10px] font-semibold text-on-surface truncate w-full">
-                        {preset.name.split('/')[0]}
-                      </span>
-                    </button>
-                  ))}
+                  {AVATAR_PRESETS.map((preset) => {
+                    const [currentBaseKey, currentToneKey] = (editingMember.avatarKey || 'husband').split(':');
+                    const currentTone = SKIN_TONES.find((s) => s.key === currentToneKey);
+                    const isSelected = currentBaseKey === preset.key;
+                    const displayEmoji = preset.supportsSkinTone && currentTone?.modifier
+                      ? applySkinTone(preset.baseEmoji, currentTone.modifier)
+                      : preset.baseEmoji;
+
+                    return (
+                      <button
+                        key={preset.key}
+                        type="button"
+                        onClick={() => {
+                          const newKey = currentToneKey ? `${preset.key}:${currentToneKey}` : preset.key;
+                          setEditingMember({
+                            ...editingMember,
+                            avatarKey: newKey,
+                            color: preset.bgColor,
+                          });
+                        }}
+                        className={`flex flex-col items-center p-2 rounded-m3-md border transition-all text-center gap-1 ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-m3-1'
+                            : 'border-outline-variant/30 hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className="text-2xl">{displayEmoji}</span>
+                        <span className="text-[10px] font-semibold text-on-surface truncate w-full">
+                          {preset.name.split('/')[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -817,16 +934,14 @@ export default function FamilyPage() {
               </div>
 
               <div>
-                <label className="font-semibold text-on-surface-variant">Valor do Crédito (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={creditAmount}
-                  onChange={(e) => setCreditAmount(e.target.value)}
-                  placeholder="Ex: 500.00"
-                  className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
-                />
+                <label className="font-semibold text-on-surface-variant">Valor do Crédito</label>
+                <div className="mt-1">
+                  <CurrencyInput
+                    value={creditAmount}
+                    onChange={(val) => setCreditAmount(val > 0 ? val.toString() : '')}
+                    currency={family?.currency || 'BRL'}
+                  />
+                </div>
               </div>
 
               <div>

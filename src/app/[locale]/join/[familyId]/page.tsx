@@ -8,7 +8,7 @@ import { Users, Check, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { getFamilyDataAction } from '@/app/actions/family';
 import { joinFamilyAction } from '@/app/actions/auth';
-import { AVATAR_PRESETS } from '@/components/ui/AvatarPresets';
+import { AVATAR_PRESETS, SKIN_TONES, applySkinTone } from '@/components/ui/AvatarPresets';
 
 export default function JoinFamilyPage() {
   const params = useParams();
@@ -116,28 +116,71 @@ export default function JoinFamilyPage() {
             />
           </div>
 
+          {/* Skin Tone Selector */}
+          <div>
+            <label className="font-semibold text-on-surface-variant mb-1.5 block">
+              Tom de Pele
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {SKIN_TONES.map((tone) => {
+                const [baseKey, currentToneKey] = (avatarKey || 'wife').split(':');
+                const isSelected = (currentToneKey || 'default') === tone.key;
+                return (
+                  <button
+                    key={tone.key}
+                    type="button"
+                    onClick={() => {
+                      const newKey = tone.key === 'default' ? baseKey : `${baseKey}:${tone.key}`;
+                      setAvatarKey(newKey);
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-m3-md border text-xs font-medium transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/40'
+                        : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
+                    }`}
+                  >
+                    <span className="text-sm">{tone.emoji}</span>
+                    <span className="text-[11px]">{tone.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="font-semibold text-on-surface-variant mb-2 block">
               Escolha seu Personagem IA
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
-              {AVATAR_PRESETS.map((preset) => (
-                <button
-                  key={preset.key}
-                  type="button"
-                  onClick={() => setAvatarKey(preset.key)}
-                  className={`flex flex-col items-center p-2 rounded-m3-md border transition-all text-center gap-1 ${
-                    avatarKey === preset.key
-                      ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-m3-1'
-                      : 'border-outline-variant/30 hover:bg-surface-container'
-                  }`}
-                >
-                  <span className="text-2xl">{preset.emoji}</span>
-                  <span className="text-[10px] font-semibold text-on-surface truncate w-full">
-                    {preset.name.split('/')[0]}
-                  </span>
-                </button>
-              ))}
+              {AVATAR_PRESETS.map((preset) => {
+                const [currentBaseKey, currentToneKey] = (avatarKey || 'wife').split(':');
+                const currentTone = SKIN_TONES.find((s) => s.key === currentToneKey);
+                const isSelected = currentBaseKey === preset.key;
+                const displayEmoji = preset.supportsSkinTone && currentTone?.modifier
+                  ? applySkinTone(preset.baseEmoji, currentTone.modifier)
+                  : preset.baseEmoji;
+
+                return (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    onClick={() => {
+                      const newKey = currentToneKey ? `${preset.key}:${currentToneKey}` : preset.key;
+                      setAvatarKey(newKey);
+                    }}
+                    className={`flex flex-col items-center p-2 rounded-m3-md border transition-all text-center gap-1 ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-m3-1'
+                        : 'border-outline-variant/30 hover:bg-surface-container'
+                    }`}
+                  >
+                    <span className="text-2xl">{displayEmoji}</span>
+                    <span className="text-[10px] font-semibold text-on-surface truncate w-full">
+                      {preset.name.split('/')[0]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

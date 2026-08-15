@@ -2,7 +2,7 @@ import React from 'react';
 import { User, Heart, Baby, Shield } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { AVATAR_PRESETS } from './AvatarPresets';
+import { AVATAR_PRESETS, SKIN_TONES, applySkinTone } from './AvatarPresets';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   role?: 'admin' | 'member' | 'child';
@@ -28,12 +28,22 @@ export const Avatar: React.FC<AvatarProps> = ({
     xl: 'h-20 w-20 text-xl',
   }[size];
 
-  const preset = AVATAR_PRESETS.find((p) => p.key === avatarKey);
+  // Parse skin tone if encoded like "husband:medium_dark"
+  const [baseKey, skinToneKey] = (avatarKey || 'husband').split(':');
+  const preset = AVATAR_PRESETS.find((p) => p.key === baseKey);
+  const skinTone = SKIN_TONES.find((s) => s.key === skinToneKey);
+
   const bgColor = color || preset?.bgColor || '#1E6B52';
+  const renderedEmoji = preset
+    ? preset.supportsSkinTone && skinTone?.modifier
+      ? applySkinTone(preset.baseEmoji, skinTone.modifier)
+      : preset.baseEmoji
+    : null;
 
   const getRoleIcon = () => {
-    if (avatarKey === 'wife' || avatarKey === 'woman_casual') return <Heart className="h-3 w-3" />;
-    if (avatarKey === 'child' || avatarKey === 'boy_1' || avatarKey === 'girl_1' || avatarKey === 'baby' || role === 'child')
+    if (baseKey === 'wife' || baseKey === 'woman_casual' || baseKey === 'woman_curly')
+      return <Heart className="h-3 w-3" />;
+    if (baseKey === 'child' || baseKey === 'boy_1' || baseKey === 'girl_1' || baseKey === 'baby' || role === 'child')
       return <Baby className="h-3 w-3" />;
     if (role === 'admin') return <Shield className="h-3 w-3" />;
     return <User className="h-3 w-3" />;
@@ -61,9 +71,19 @@ export const Avatar: React.FC<AvatarProps> = ({
       title={`${name} (${role})`}
       {...props}
     >
-      {preset ? (
-        <span className={size === 'xl' ? 'text-3xl' : size === 'lg' ? 'text-2xl' : size === 'md' ? 'text-base' : 'text-xs'}>
-          {preset.emoji}
+      {renderedEmoji ? (
+        <span
+          className={
+            size === 'xl'
+              ? 'text-3xl'
+              : size === 'lg'
+              ? 'text-2xl'
+              : size === 'md'
+              ? 'text-base'
+              : 'text-xs'
+          }
+        >
+          {renderedEmoji}
         </span>
       ) : (
         <span>{initials}</span>
