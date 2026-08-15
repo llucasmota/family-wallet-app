@@ -198,13 +198,18 @@ export default function FamilyPage() {
 
   const handleSaveGroupSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!family || !groupName.trim()) return;
+    if (!groupName.trim()) {
+      showToast('Por favor, informe o nome do grupo', 'error');
+      return;
+    }
 
     setIsSaving(true);
     try {
-      if (groupCurrency !== family.currency) {
+      const targetFamilyId = family?.id || 'default';
+
+      if (groupCurrency !== (family?.currency || 'BRL')) {
         await updateFamilyCurrencyWithConversionAction({
-          familyId: family.id,
+          familyId: targetFamilyId,
           newCurrency: groupCurrency,
           mode: conversionMode,
           exchangeRate: conversionMode === 'convert_rate' ? parseFloat(exchangeRate) || 1 : 1,
@@ -212,15 +217,17 @@ export default function FamilyPage() {
       }
 
       await updateFamilySettingsAction({
-        familyId: family.id,
+        familyId: targetFamilyId,
         name: groupName.trim(),
         currency: groupCurrency,
       });
 
+      showToast('✨ Configurações do grupo atualizadas!');
       setIsGroupSettingsOpen(false);
       await loadFamily();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showToast(err.message || 'Erro ao salvar grupo', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -234,7 +241,7 @@ export default function FamilyPage() {
   const handleOpenAddMember = () => {
     setEditingMember({
       id: '',
-      displayName: '',
+      displayName: 'Administrador',
       avatarKey: 'husband',
       color: '#1E6B52',
       role: (family?.members.length || 0) === 0 ? 'admin' : 'member',
@@ -244,67 +251,59 @@ export default function FamilyPage() {
 
   const handleSaveMemberProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingMember || !family) return;
+    if (!editingMember) return;
 
     setIsSaving(true);
     try {
+      let res;
       if (editingMember.id) {
-        // Optimistic UI update
-        const updatedMembers = family.members.map((m) =>
-          m.id === editingMember.id
-            ? {
-                ...m,
-                displayName: editingMember.displayName,
-                avatarKey: editingMember.avatarKey,
-                color: editingMember.color,
-                role: editingMember.role,
-              }
-            : m
-        );
-        setFamily({ ...family, members: updatedMembers });
-
-        await updateMemberProfileAction({
+        res = await updateMemberProfileAction({
           memberId: editingMember.id,
-          displayName: editingMember.displayName,
-          avatarKey: editingMember.avatarKey,
-          color: editingMember.color,
-          role: editingMember.role,
+          displayName: editingMember.displayName.trim() || 'Administrador',
+          avatarKey: editingMember.avatarKey || 'husband',
+          color: editingMember.color || '#1E6B52',
+          role: editingMember.role || 'admin',
         });
-        showToast('✨ Perfil atualizado com sucesso!');
       } else {
-        await addMemberAction({
-          familyId: family.id,
-          displayName: editingMember.displayName,
-          avatarKey: editingMember.avatarKey,
-          color: editingMember.color,
-          role: editingMember.role,
+        res = await addMemberAction({
+          familyId: family?.id || 'default',
+          displayName: editingMember.displayName.trim() || 'Administrador',
+          avatarKey: editingMember.avatarKey || 'husband',
+          color: editingMember.color || '#1E6B52',
+          role: editingMember.role || 'admin',
         });
-        showToast('✨ Novo membro adicionado com sucesso!');
       }
-      setIsMemberEditOpen(false);
-      await loadFamily();
-    } catch (err) {
+
+      if (res.success) {
+        showToast('✨ Perfil salvo com sucesso!');
+        setIsMemberEditOpen(false);
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao salvar perfil', 'error');
+      }
+    } catch (err: any) {
       console.error(err);
-      showToast('Erro ao salvar membro', 'error');
+      showToast(err.message || 'Erro inesperado ao salvar', 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleSettleDebt = async (debt: (typeof settlements)[0]) => {
-    if (!family) return;
     setIsSettling(true);
 
     try {
       await recordSettlementAction({
-        familyId: family.id,
+        familyId: family?.id || 'default',
         fromMemberId: debt.fromMemberId,
         toMemberId: debt.toMemberId,
         amount: debt.amount,
       });
+      showToast('✨ Acerto liquidado com sucesso!');
       await loadFamily();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showToast(err.message || 'Erro ao liquidar acerto', 'error');
     } finally {
       setIsSettling(false);
     }
@@ -312,12 +311,15 @@ export default function FamilyPage() {
 
   const handleSaveInitialCredit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!family || !creditAmount || !creditorId || !debtorId) return;
+    if (!creditAmount) {
+      showToast('Informe o valor do crédito', 'error');
+      return;
+    }
 
     setIsSettling(true);
     try {
       await recordSettlementAction({
-        familyId: family.id,
+        familyId: family?.id || 'default',
         fromMemberId: debtorId,
         toMemberId: creditorId,
         amount: -parseFloat(creditAmount),
