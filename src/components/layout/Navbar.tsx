@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
-import { Wallet, LayoutDashboard, Receipt, Users, Sparkles, Plus, Globe } from 'lucide-react';
+import { UserMenu } from './UserMenu';
+import { Wallet, LayoutDashboard, Receipt, Users, Sparkles, Plus, Globe, Tag } from 'lucide-react';
 
 export interface NavbarProps {
   onOpenAgent: () => void;
@@ -24,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
     { href: '/', label: 'Visão Geral', icon: <LayoutDashboard className="h-4 w-4" /> },
     { href: '/expenses', label: 'Despesas', icon: <Receipt className="h-4 w-4" /> },
     { href: '/family', label: 'Família', icon: <Users className="h-4 w-4" /> },
+    { href: '/categories', label: 'Categorias', icon: <Tag className="h-4 w-4" /> },
   ];
 
   const handleToggleLocale = () => {
@@ -104,12 +106,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
 
           <ThemeToggle />
 
-          <Avatar
-            name="Lucas Mota"
+          <UserMenu
+            displayName="Lucas Mota"
             role="admin"
             avatarKey="husband"
-            size="sm"
-            className="cursor-pointer"
           />
         </div>
       </div>
