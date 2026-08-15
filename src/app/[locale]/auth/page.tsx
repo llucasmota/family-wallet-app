@@ -3,19 +3,20 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Wallet, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, CheckCircle2, Inbox } from 'lucide-react';
+import { Wallet, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, Inbox, KeyRound, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { signInAction, signUpAction } from '@/app/actions/auth';
+import { signInAction, signUpAction, resetPasswordAction } from '@/app/actions/auth';
 
 export default function AuthPage() {
   const router = useRouter();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isVerificationPending, setIsVerificationPending] = useState(false);
+  const [isResetLinkSent, setIsResetLinkSent] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +25,7 @@ export default function AuthPage() {
     setErrorMessage(null);
 
     try {
-      if (isSignUp) {
+      if (authMode === 'signup') {
         const res = await signUpAction({ email, password, name });
         if (res.success) {
           if (res.requiresVerification) {
@@ -36,12 +37,19 @@ export default function AuthPage() {
         } else {
           setErrorMessage(res.error || 'Erro ao criar conta');
         }
-      } else {
+      } else if (authMode === 'login') {
         const res = await signInAction({ email, password });
         if (res.success) {
           router.push('/');
         } else {
           setErrorMessage(res.error || 'Email ou senha inválidos');
+        }
+      } else if (authMode === 'forgot_password') {
+        const res = await resetPasswordAction(email);
+        if (res.success) {
+          setIsResetLinkSent(true);
+        } else {
+          setErrorMessage(res.error || 'Não foi possível enviar o link de recuperação');
         }
       }
     } catch (err: any) {
@@ -51,7 +59,7 @@ export default function AuthPage() {
     }
   };
 
-  // Dedicated View for Email Confirmation Required
+  // Dedicated View for Email Confirmation Required on Signup
   if (isVerificationPending) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface p-4 transition-colors duration-200">
@@ -77,7 +85,45 @@ export default function AuthPage() {
               size="md"
               onClick={() => {
                 setIsVerificationPending(false);
-                setIsSignUp(false);
+                setAuthMode('login');
+              }}
+              className="w-full"
+            >
+              Voltar para o Login
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Dedicated View for Reset Password Link Sent
+  if (isResetLinkSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface p-4 transition-colors duration-200">
+        <Card variant="elevated" className="w-full max-w-md p-8 flex flex-col items-center text-center gap-5 shadow-m3-3">
+          <div className="flex h-16 w-16 items-center justify-center rounded-m3-full bg-primary-container text-primary shadow-m3-1">
+            <KeyRound className="h-8 w-8" />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-bold text-on-surface">E-mail de Recuperação Enviado!</h2>
+            <p className="text-xs text-on-surface-variant max-w-sm leading-relaxed">
+              Enviamos as instruções de redefinição de senha para{' '}
+              <strong className="text-on-surface font-semibold">{email}</strong>.
+            </p>
+            <p className="text-xs text-on-surface-variant max-w-sm leading-relaxed mt-1">
+              Clique no link recebido no e-mail para cadastrar sua nova senha.
+            </p>
+          </div>
+
+          <div className="w-full border-t border-outline-variant/20 dark:border-white/[0.06] pt-4">
+            <Button
+              variant="filled"
+              size="md"
+              onClick={() => {
+                setIsResetLinkSent(false);
+                setAuthMode('login');
               }}
               className="w-full"
             >
@@ -98,42 +144,62 @@ export default function AuthPage() {
             <Wallet className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-on-surface">
-            {isSignUp ? 'Criar Conta no Family Wallet' : 'Entrar no Family Wallet'}
+            {authMode === 'signup'
+              ? 'Criar Conta no Family Wallet'
+              : authMode === 'forgot_password'
+              ? 'Recuperar Senha'
+              : 'Entrar no Family Wallet'}
           </h1>
           <p className="text-xs text-on-surface-variant max-w-xs">
-            {isSignUp
+            {authMode === 'signup'
               ? 'Organize as finanças da sua família com simplicidade e inteligência'
+              : authMode === 'forgot_password'
+              ? 'Informe seu e-mail para receber as instruções de redefinição'
               : 'Acesse o painel financeiro compartilhado da sua família'}
           </p>
         </div>
 
-        {/* Toggle Form Type */}
-        <div className="flex rounded-m3-md bg-surface-container dark:bg-[#141816] p-1 gap-1 text-xs">
+        {/* Toggle Form Type (only on login / signup) */}
+        {authMode !== 'forgot_password' ? (
+          <div className="flex rounded-m3-md bg-surface-container dark:bg-[#141816] p-1 gap-1 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('login');
+                setErrorMessage(null);
+              }}
+              className={`flex-1 py-2 rounded-m3-sm font-semibold transition-all ${
+                authMode === 'login' ? 'bg-surface dark:bg-[#1E2421] shadow-m3-1 text-primary' : 'text-on-surface-variant'
+              }`}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signup');
+                setErrorMessage(null);
+              }}
+              className={`flex-1 py-2 rounded-m3-sm font-semibold transition-all ${
+                authMode === 'signup' ? 'bg-surface dark:bg-[#1E2421] shadow-m3-1 text-primary' : 'text-on-surface-variant'
+              }`}
+            >
+              Cadastrar
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={() => {
-              setIsSignUp(false);
+              setAuthMode('login');
               setErrorMessage(null);
             }}
-            className={`flex-1 py-2 rounded-m3-sm font-semibold transition-all ${
-              !isSignUp ? 'bg-surface dark:bg-[#1E2421] shadow-m3-1 text-primary' : 'text-on-surface-variant'
-            }`}
+            className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline self-start"
           >
-            Entrar
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Voltar para o Login
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(true);
-              setErrorMessage(null);
-            }}
-            className={`flex-1 py-2 rounded-m3-sm font-semibold transition-all ${
-              isSignUp ? 'bg-surface dark:bg-[#1E2421] shadow-m3-1 text-primary' : 'text-on-surface-variant'
-            }`}
-          >
-            Cadastrar
-          </button>
-        </div>
+        )}
 
         {/* Error Feedback */}
         {errorMessage && (
@@ -145,7 +211,7 @@ export default function AuthPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs">
-          {isSignUp && (
+          {authMode === 'signup' && (
             <div>
               <label className="font-semibold text-on-surface-variant">Seu Nome</label>
               <div className="relative mt-1">
@@ -177,27 +243,49 @@ export default function AuthPage() {
             </div>
           </div>
 
-          <div>
-            <label className="font-semibold text-on-surface-variant">Senha</label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-on-surface-variant" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-9 pr-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
-              />
+          {authMode !== 'forgot_password' && (
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-on-surface-variant">Senha</label>
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('forgot_password');
+                      setErrorMessage(null);
+                    }}
+                    className="text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    Esqueceu sua senha?
+                  </button>
+                )}
+              </div>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-on-surface-variant" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-9 pr-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <Button variant="filled" size="md" type="submit" disabled={isLoading} className="mt-2 w-full gap-2">
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                <span>{isSignUp ? 'Criar Conta' : 'Acessar Painel'}</span>
+                <span>
+                  {authMode === 'signup'
+                    ? 'Criar Conta'
+                    : authMode === 'forgot_password'
+                    ? 'Enviar Link de Recuperação'
+                    : 'Acessar Painel'}
+                </span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
