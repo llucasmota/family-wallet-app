@@ -430,7 +430,22 @@ export default function FamilyPage() {
         toMemberId: debt.toMemberId,
         amount: debt.amount,
       });
-      showToast('✨ Acerto liquidado com sucesso!');
+
+      // Celebration: confetti animation + subtle haptic feedback
+      try {
+        const confetti = (await import('canvas-confetti')).default;
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#1E6B52', '#3D6473', '#D97706', '#E11D48'],
+        });
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate([20, 50, 20]);
+        }
+      } catch {}
+
+      showToast('🎉 Acerto liquidado com sucesso! Saldo zerado.');
       await loadFamily();
     } catch (err: any) {
       console.error(err);

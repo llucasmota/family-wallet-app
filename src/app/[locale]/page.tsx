@@ -205,17 +205,17 @@ export default function DashboardPage() {
 
         {/* 4 Metric Cards / Shimmer Skeleton */}
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} variant="elevated" className="h-36 flex flex-col justify-between">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-36" />
-                <Skeleton className="h-3 w-44" />
+              <Card key={i} variant="elevated" className="h-28 sm:h-36 flex flex-col justify-between p-3 sm:p-5">
+                <Skeleton className="h-3 sm:h-4 w-16 sm:w-24" />
+                <Skeleton className="h-6 sm:h-8 w-24 sm:w-36" />
+                <Skeleton className="h-2.5 sm:h-3 w-28 sm:w-44" />
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             <MetricCard
               title="Gasto do Mês"
               value={metrics.totalCurrentMonth}
