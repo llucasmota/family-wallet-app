@@ -3,6 +3,7 @@
 import React from 'react';
 import { AlertCircle, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export interface DueBillsAlertBannerProps {
   alerts?: {
@@ -18,6 +19,9 @@ export const DueBillsAlertBanner: React.FC<DueBillsAlertBannerProps> = ({
   alerts = { overdueCount: 0, overdueAmount: 0, dueSoonCount: 0, dueSoonAmount: 0 },
   currency = 'BRL',
 }) => {
+  const tDash = useTranslations('Dashboard');
+  const tCommon = useTranslations('Common');
+
   const formatCurrency = (val: number) => {
     switch (currency) {
       case 'USD':
@@ -45,7 +49,7 @@ export const DueBillsAlertBanner: React.FC<DueBillsAlertBannerProps> = ({
             </div>
             <div>
               <p className="text-xs font-bold">
-                {alerts.overdueCount} {alerts.overdueCount === 1 ? 'conta vencida' : 'contas vencidas'} ({formatCurrency(alerts.overdueAmount)})
+                {alerts.overdueCount} {tDash('overdueBadge')} ({formatCurrency(alerts.overdueAmount)})
               </p>
               <p className="text-[11px] text-rose-500/80">Evite juros e multas realizando o pagamento</p>
             </div>

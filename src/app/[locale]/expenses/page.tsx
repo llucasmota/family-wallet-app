@@ -1,6 +1,5 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +17,9 @@ import { getDashboardDataAction, toggleExpenseStatusAction, deleteExpenseAction 
 import { extractPaymentMethod } from '@/services/payment-methods';
 
 export default function ExpensesPage() {
+  const tExp = useTranslations('Expenses');
+  const tCommon = useTranslations('Common');
+  const tNav = useTranslations('Navigation');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -130,10 +132,10 @@ export default function ExpensesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">
-              Extrato de Despesas
+              {tExp('title')}
             </h1>
             <p className="text-xs sm:text-sm text-on-surface-variant">
-              Histórico detalhado, divisões de contas e busca em tempo real
+              {tExp('subtitle')}
             </p>
           </div>
 
@@ -152,15 +154,15 @@ export default function ExpensesPage() {
               className="gap-1.5 text-xs h-9"
             >
               <FileText className="h-4 w-4 text-primary" />
-              Relatório (PDF)
+              {tNav('reportPdf')}
             </Button>
             <Button variant="outlined" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs h-9">
               <Download className="h-4 w-4" />
-              Exportar CSV
+              {tExp('exportCsv')}
             </Button>
             <Button variant="filled" size="sm" onClick={() => setIsQuickAddOpen(true)} className="gap-1.5 text-xs h-9">
               <Plus className="h-4 w-4" />
-              Lançar Despesa
+              {tExp('newExpense')}
             </Button>
           </div>
         </div>
@@ -173,14 +175,14 @@ export default function ExpensesPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por descrição ou categoria..."
+              placeholder={tCommon('search')}
               className="w-full rounded-m3-md border border-outline-variant/30 bg-surface dark:bg-[#141816] pl-9 pr-3 py-1.5 text-xs text-on-surface focus:border-primary focus:outline-none"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
             <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
-              <Filter className="h-3.5 w-3.5" /> Status:
+              <Filter className="h-3.5 w-3.5" /> {tCommon('status')}:
             </span>
             <button
               onClick={() => setStatusFilter('all')}
@@ -190,7 +192,7 @@ export default function ExpensesPage() {
                   : 'bg-surface-container dark:bg-[#141816] text-on-surface-variant'
               }`}
             >
-              Todos
+              {tCommon('all')}
             </button>
             <button
               onClick={() => setStatusFilter('paid')}
@@ -200,7 +202,7 @@ export default function ExpensesPage() {
                   : 'bg-surface-container dark:bg-[#141816] text-on-surface-variant'
               }`}
             >
-              Pagos
+              {tCommon('paid')}
             </button>
             <button
               onClick={() => setStatusFilter('pending')}
@@ -210,7 +212,7 @@ export default function ExpensesPage() {
                   : 'bg-surface-container dark:bg-[#141816] text-on-surface-variant'
               }`}
             >
-              A Vencer
+              {tCommon('pending')}
             </button>
           </div>
         </Card>
@@ -319,14 +321,14 @@ export default function ExpensesPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-surface-container-high dark:bg-[#151A18] text-on-surface-variant font-semibold border-b border-outline-variant/20 dark:border-white/[0.06]">
                   <tr>
-                    <th className="py-3.5 px-4">Descrição & Categoria</th>
-                    <th className="py-3.5 px-4">Pagador</th>
-                    <th className="py-3.5 px-4">Meio</th>
-                    <th className="py-3.5 px-4">Divisão</th>
-                    <th className="py-3.5 px-4">Vencimento</th>
-                    <th className="py-3.5 px-4">Valor</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 text-right">Ações</th>
+                    <th className="py-3.5 px-4">{tExp('descriptionAndCategory')}</th>
+                    <th className="py-3.5 px-4">{tCommon('payer')}</th>
+                    <th className="py-3.5 px-4">{tExp('paymentMethod')}</th>
+                    <th className="py-3.5 px-4">{tExp('splitSummary')}</th>
+                    <th className="py-3.5 px-4">{tExp('dueDate')}</th>
+                    <th className="py-3.5 px-4">{tCommon('amount')}</th>
+                    <th className="py-3.5 px-4">{tCommon('status')}</th>
+                    <th className="py-3.5 px-4 text-right">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/20 dark:divide-white/[0.04]">
@@ -365,7 +367,7 @@ export default function ExpensesPage() {
                   ) : filtered.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-on-surface-variant">
-                        Nenhuma despesa encontrada para os filtros selecionados.
+                        {tExp('noExpensesFound')}
                       </td>
                     </tr>
                   ) : (
@@ -423,11 +425,11 @@ export default function ExpensesPage() {
                           <td className="py-3 px-4">
                             <button
                               onClick={() => handleToggleStatus(item.id, item.status)}
-                              title="Clique para alternar entre Pago e A Vencer"
+                              title="Toggle status"
                               className="focus:outline-none transition-transform active:scale-95"
                             >
                               <Badge variant={item.status === 'paid' ? 'paid' : 'pending'}>
-                                {item.status === 'paid' ? '✓ Pago' : 'A Vencer'}
+                                {item.status === 'paid' ? tCommon('paid') : tCommon('pending')}
                               </Badge>
                             </button>
                           </td>

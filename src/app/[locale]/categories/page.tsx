@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +12,8 @@ import { getFamilyDataAction } from '@/app/actions/family';
 import { createCategoryAction } from '@/app/actions/categories';
 
 export default function CategoriesPage() {
+  const tCat = useTranslations('Categories');
+  const tCommon = useTranslations('Common');
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isNewCatModalOpen, setIsNewCatModalOpen] = useState(false);
@@ -58,19 +61,19 @@ export default function CategoriesPage() {
       });
       setIsNewCatModalOpen(false);
       setNewCatName('');
-      await loadData();
     } catch (err) {
       console.error(err);
     } finally {
       setIsSaving(false);
+      loadData();
     }
   };
 
   const M3_PALETTE = [
-    '#2E7D5E', // Mint / Pine
-    '#3D6473', // Slate Blue
+    '#2E7D5E', // Primary Forest
+    '#3D6473', // Secondary Slate
     '#D97706', // Warm Amber
-    '#E11D48', // Rose / Berry
+    '#E11D48', // Berry Rose
     '#7C3AED', // Violet
     '#059669', // Emerald
     '#0284C7', // Ocean
@@ -90,10 +93,10 @@ export default function CategoriesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">
-              Categorias de Gastos
+              {tCat('title')}
             </h1>
             <p className="text-xs sm:text-sm text-on-surface-variant">
-              Personalize as categorias familiares e organize seu orçamento
+              {tCat('subtitle')}
             </p>
           </div>
 
@@ -104,7 +107,7 @@ export default function CategoriesPage() {
             className="gap-1 text-xs"
           >
             <Plus className="h-4 w-4" />
-            Nova Categoria
+            {tCat('newCategory')}
           </Button>
         </div>
 
@@ -129,7 +132,7 @@ export default function CategoriesPage() {
                     className="h-2 w-2 rounded-full inline-block"
                     style={{ backgroundColor: cat.color }}
                   />
-                  Ativa
+                  {tCat('active')}
                 </span>
               </div>
             </Card>

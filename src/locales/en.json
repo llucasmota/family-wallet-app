@@ -27,7 +27,10 @@
     "signOut": "Sign Out",
     "myAccount": "My Account",
     "adminBadge": "Family Admin",
-    "memberBadge": "Family Member"
+    "memberBadge": "Family Member",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week"
   },
   "Navigation": {
     "overview": "Overview",
@@ -52,13 +55,24 @@
     "trendUp": "Above average",
     "trendDown": "Below average",
     "trendStable": "On average",
-    "spendingByCategory": "Spending by Category",
+    "spendingByCategory": "Category Breakdown",
+    "monthlyEvolution": "Spending History",
+    "categorySubtitle": "Detailed view for the current month",
+    "evolutionSubtitle": "History of past months",
+    "categoriesTab": "Categories",
+    "historyTab": "History",
     "recentExpenses": "Recent Expenses",
+    "recentExpensesSubtitle": "Expenses for the selected period",
+    "noExpensesInPeriod": "No expenses logged in this period.",
     "viewAll": "View all",
     "quickAdd": "New Expense",
     "agentMode": "AI Assistant",
     "dueBills": "Bills Due in the Next 7 Days",
-    "dueAlert": "You have {count} bill(s) due soon totaling {total}."
+    "dueAlert": "You have {count} bill(s) due soon totaling {total}.",
+    "categoryBudgets": "Category Budgets",
+    "monthlyLimits": "Couple budget limits & caps",
+    "overdueBadge": "Overdue",
+    "dueSoonBadge": "Due soon"
   },
   "C6Card": {
     "title": "C6 Card Invoice",
@@ -98,7 +112,10 @@
     "whoPaid": "Who Paid?",
     "exportCsv": "Export CSV",
     "noExpensesFound": "No expenses found for the selected filters.",
-    "recurringNotice": "Edits will only affect future charges."
+    "recurringNotice": "Edits will only affect future charges.",
+    "fillWithAi": "Fill with AI ✨",
+    "fillWithAiSubtitle": "Receipt photo, voice audio or text",
+    "useAi": "Use AI"
   },
   "Family": {
     "title": "Family Group",
@@ -125,12 +142,26 @@
     "reject": "Reject"
   },
   "Agent": {
-    "title": "Smart Assistant",
-    "subtitle": "Upload a receipt, send a voice note or type what you purchased",
-    "placeholderText": "E.g.: Paid $150 at the grocery store on C6 card in 3x...",
+    "title": "AI Smart Assistant",
+    "subtitle": "Intelligent multimodal expense logging",
+    "freeText": "Free Text",
+    "voiceAudio": "Voice / Audio",
+    "receiptPhoto": "Receipt / Photo",
+    "placeholderText": "E.g.: Paid $180 at restaurant on C6 card in 2x...",
     "listening": "Listening...",
     "analyzing": "Analyzing receipt...",
     "draftCreated": "Expense draft created successfully!",
-    "confirmAndSave": "Confirm Expense"
+    "confirmAndSave": "Confirm Expense",
+    "interpretWithAi": "Interpret with AI",
+    "interpreting": "Interpreting..."
+  },
+  "Categories": {
+    "title": "Expense Categories",
+    "subtitle": "Customize family categories and organize your budget",
+    "newCategory": "New Category",
+    "createCategory": "Create Category",
+    "categoryName": "Category Name",
+    "categoryColor": "Color Code",
+    "active": "Active"
   }
 }

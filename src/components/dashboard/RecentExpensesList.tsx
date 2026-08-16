@@ -5,6 +5,7 @@ import { Badge } from '../ui/Badge';
 import { Calendar, Layers, Repeat, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { useTranslations } from 'next-intl';
 
 export interface RecentExpenseItem {
   id: string;
@@ -33,6 +34,9 @@ export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({
   onToggleStatus,
   onEditExpense,
 }) => {
+  const tDash = useTranslations('Dashboard');
+  const tCommon = useTranslations('Common');
+
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
@@ -42,20 +46,20 @@ export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({
     <Card variant="elevated" className="flex flex-col gap-4">
       <div className="flex items-center justify-between border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
         <div>
-          <h3 className="font-semibold text-on-surface">Últimos Lançamentos</h3>
-          <p className="text-xs text-on-surface-variant">Despesas do período selecionado</p>
+          <h3 className="font-semibold text-on-surface">{tDash('recentExpenses')}</h3>
+          <p className="text-xs text-on-surface-variant">{tDash('recentExpensesSubtitle')}</p>
         </div>
         <Link
           href="/expenses"
           className="text-xs font-medium text-primary hover:underline hover:brightness-110"
         >
-          Ver todos
+          {tDash('viewAll')}
         </Link>
       </div>
 
       {expenses.length === 0 ? (
         <div className="py-8 text-center text-xs text-on-surface-variant">
-          Nenhuma despesa registrada neste período.
+          {tDash('noExpensesInPeriod')}
         </div>
       ) : (
         <div className="flex flex-col divide-y divide-outline-variant/20 dark:divide-white/[0.04]">

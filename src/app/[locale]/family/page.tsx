@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -53,6 +54,8 @@ import {
 import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, getAdaptedEmoji } from '@/components/ui/AvatarPresets';
 
 export default function FamilyPage() {
+  const tFam = useTranslations('Family');
+  const tCommon = useTranslations('Common');
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
@@ -517,7 +520,7 @@ export default function FamilyPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">
-                  {family?.name || 'Grupo Familiar'}
+                  {family?.name || tFam('title')}
                 </h1>
                 <button
                   onClick={() => setIsGroupSettingsOpen(true)}
@@ -528,7 +531,7 @@ export default function FamilyPage() {
                 </button>
               </div>
               <p className="text-xs sm:text-sm text-on-surface-variant">
-                Membros cadastrados, avatares inteligentes e acerto de contas
+                {tFam('subtitle')}
               </p>
             </div>
           </div>
@@ -541,7 +544,7 @@ export default function FamilyPage() {
               className="gap-1.5 text-xs"
             >
               <Plus className="h-4 w-4" />
-              Adicionar Membro
+              {tFam('addMember')}
             </Button>
             <Button
               variant="outlined"
@@ -550,7 +553,7 @@ export default function FamilyPage() {
               className="gap-1 text-xs"
             >
               <Plus className="h-3.5 w-3.5" />
-              Lançar Crédito Inicial
+              Lançar Crédito
             </Button>
             <Button
               variant="filled"
@@ -559,7 +562,7 @@ export default function FamilyPage() {
               className="gap-2 text-xs"
             >
               <Share2 className="h-4 w-4" />
-              Convidar Familiar
+              {tFam('inviteLink')}
             </Button>
           </div>
         </div>
@@ -583,9 +586,9 @@ export default function FamilyPage() {
                   <ArrowRightLeft className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-on-surface">Acerto de Contas do Mês</h3>
+                  <h3 className="font-bold text-on-surface">{tFam('settlementTitle')}</h3>
                   <p className="text-xs text-on-surface-variant">
-                    Calculado dinamicamente com base nas despesas, splits e saldos pré-existentes
+                    {tFam('settlementSubtitle')}
                   </p>
                 </div>
               </div>
@@ -612,14 +615,14 @@ export default function FamilyPage() {
                         disabled={isSettling}
                         className="ml-2 h-7 px-2.5 text-[11px]"
                       >
-                        {isSettling ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Liquidar'}
+                        {isSettling ? <Loader2 className="h-3 w-3 animate-spin" /> : tFam('settleDebt')}
                       </Button>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="rounded-m3-md bg-surface dark:bg-[#141816] px-4 py-2 text-xs font-semibold text-primary shadow-m3-1">
-                  🎉 Tudo acertado! Nenhuma dívida pendente entre os membros.
+                  {tFam('allSettled')}
                 </div>
               )}
             </div>

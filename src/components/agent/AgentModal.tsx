@@ -1,11 +1,10 @@
-'use client';
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Sparkles, Mic, MicOff, Upload, Check, AlertCircle, X, Loader2, FileImage } from 'lucide-react';
 import { ExtractedExpenseDraft } from '../../services/ai/types';
+import { useTranslations } from 'next-intl';
 
 export interface AgentModalProps {
   isOpen: boolean;
@@ -14,6 +13,7 @@ export interface AgentModalProps {
 }
 
 export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfirmDraft }) => {
+  const tAgent = useTranslations('Agent');
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [draft, setDraft] = useState<ExtractedExpenseDraft | null>(null);
@@ -190,8 +190,8 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-on-surface text-base">Assistente Financeiro IA</h3>
-              <p className="text-xs text-on-surface-variant">Lançamento multimodal inteligente</p>
+              <h3 className="font-semibold text-on-surface text-base">{tAgent('title')}</h3>
+              <p className="text-xs text-on-surface-variant">{tAgent('subtitle')}</p>
             </div>
           </div>
           <Button variant="text" size="icon" onClick={onClose} aria-label="Fechar">
@@ -209,7 +209,7 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
                 : 'text-on-surface-variant'
             }`}
           >
-            Texto Livre
+            {tAgent('freeText')}
           </button>
           <button
             onClick={() => setMode('voice')}
@@ -220,7 +220,7 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
             }`}
           >
             <Mic className="h-3.5 w-3.5" />
-            Áudio / Voz
+            {tAgent('voiceAudio')}
           </button>
           <button
             onClick={() => setMode('image')}
@@ -231,7 +231,7 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
             }`}
           >
             <Upload className="h-3.5 w-3.5" />
-            Comprovante / Foto
+            {tAgent('receiptPhoto')}
           </button>
         </div>
 
@@ -241,7 +241,7 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Ex: Paguei 180 no restaurante no crédito em 2x..."
+              placeholder={tAgent('placeholderText')}
               className="w-full h-24 rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] p-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-primary focus:outline-none"
             />
             <Button
@@ -254,12 +254,12 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Interpretando...
+                  {tAgent('interpreting')}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  Interpretar com IA
+                  {tAgent('interpretWithAi')}
                 </>
               )}
             </Button>

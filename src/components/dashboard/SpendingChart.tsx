@@ -1,10 +1,9 @@
-'use client';
-
 import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { PieChart as PieIcon, BarChart3 as BarIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { useTranslations } from 'next-intl';
 
 export interface CategorySpending {
   name: string;
@@ -21,6 +20,7 @@ export interface SpendingChartProps {
 export const SpendingChart: React.FC<SpendingChartProps> = ({ categories, historicalMonthly }) => {
   const [chartType, setChartType] = useState<'donut' | 'history'>('donut');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const tDash = useTranslations('Dashboard');
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -42,7 +42,7 @@ export const SpendingChart: React.FC<SpendingChartProps> = ({ categories, histor
             {formatCurrency(data.value)}
           </div>
           <span className="text-[10px] text-slate-400">
-            {data.payload?.percentage ? `${data.payload.percentage}% do total do mês` : ''}
+            {data.payload?.percentage ? `${data.payload.percentage}%` : ''}
           </span>
         </div>
       );
@@ -70,10 +70,10 @@ export const SpendingChart: React.FC<SpendingChartProps> = ({ categories, histor
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
         <div>
           <h3 className="font-semibold text-on-surface">
-            {chartType === 'donut' ? 'Distribuição por Categoria' : 'Evolução dos Gastos'}
+            {chartType === 'donut' ? tDash('spendingByCategory') : tDash('monthlyEvolution')}
           </h3>
           <p className="text-xs text-on-surface-variant">
-            {chartType === 'donut' ? 'Visão detalhada do mês atual' : 'Histórico dos últimos meses'}
+            {chartType === 'donut' ? tDash('categorySubtitle') : tDash('evolutionSubtitle')}
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export const SpendingChart: React.FC<SpendingChartProps> = ({ categories, histor
             className="h-8 px-3 text-xs"
           >
             <PieIcon className="h-3.5 w-3.5" />
-            Categorias
+            {tDash('categoriesTab')}
           </Button>
           <Button
             variant={chartType === 'history' ? 'filled' : 'text'}
@@ -94,7 +94,7 @@ export const SpendingChart: React.FC<SpendingChartProps> = ({ categories, histor
             className="h-8 px-3 text-xs"
           >
             <BarIcon className="h-3.5 w-3.5" />
-            Histórico
+            {tDash('historyTab')}
           </Button>
         </div>
       </div>

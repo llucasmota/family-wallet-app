@@ -27,7 +27,10 @@
     "signOut": "Sair da Conta",
     "myAccount": "Minha Conta",
     "adminBadge": "Administrador Familiar",
-    "memberBadge": "Membro Familiar"
+    "memberBadge": "Membro Familiar",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "thisWeek": "Esta Semana"
   },
   "Navigation": {
     "overview": "Visão Geral",
@@ -52,13 +55,24 @@
     "trendUp": "Acima da média",
     "trendDown": "Abaixo da média",
     "trendStable": "Dentro da média",
-    "spendingByCategory": "Gastos por Categoria",
+    "spendingByCategory": "Distribuição por Categoria",
+    "monthlyEvolution": "Evolução dos Gastos",
+    "categorySubtitle": "Visão detalhada do mês atual",
+    "evolutionSubtitle": "Histórico dos últimos meses",
+    "categoriesTab": "Categorias",
+    "historyTab": "Histórico",
     "recentExpenses": "Últimos Lançamentos",
+    "recentExpensesSubtitle": "Despesas do período selecionado",
+    "noExpensesInPeriod": "Nenhuma despesa registrada neste período.",
     "viewAll": "Ver todos",
     "quickAdd": "Novo Lançamento",
     "agentMode": "Assistente IA",
     "dueBills": "Contas Vencendo nos Próximos 7 Dias",
-    "dueAlert": "Você tem {count} conta(s) a vencer nos próximos dias somando {total}."
+    "dueAlert": "Você tem {count} conta(s) a vencer nos próximos dias somando {total}.",
+    "categoryBudgets": "Orçamentos por Categoria",
+    "monthlyLimits": "Limites e tetos de gastos do casal",
+    "overdueBadge": "Vencida",
+    "dueSoonBadge": "Vence em breve"
   },
   "C6Card": {
     "title": "Fatura Cartão C6",
@@ -98,7 +112,10 @@
     "whoPaid": "Quem Pagou?",
     "exportCsv": "Exportar CSV",
     "noExpensesFound": "Nenhuma despesa encontrada para os filtros selecionados.",
-    "recurringNotice": "Alterações afetam apenas os lançamentos futuros."
+    "recurringNotice": "Alterações afetam apenas os lançamentos futuros.",
+    "fillWithAi": "Preencher com IA ✨",
+    "fillWithAiSubtitle": "Foto de comprovante, áudio de voz ou texto",
+    "useAi": "Usar IA"
   },
   "Family": {
     "title": "Grupo Familiar",
@@ -125,12 +142,26 @@
     "reject": "Rejeitar"
   },
   "Agent": {
-    "title": "Assistente Inteligente",
-    "subtitle": "Envie um comprovante, fale por áudio ou digite o que comprou",
-    "placeholderText": "Ex: Paguei 150 de mercado no cartão C6 em 3x...",
+    "title": "Assistente Financeiro IA",
+    "subtitle": "Lançamento multimodal inteligente",
+    "freeText": "Texto Livre",
+    "voiceAudio": "Áudio / Voz",
+    "receiptPhoto": "Comprovante / Foto",
+    "placeholderText": "Ex: Paguei 180 no restaurante no crédito C6 em 2x...",
     "listening": "Ouvindo...",
     "analyzing": "Analisando comprovante...",
     "draftCreated": "Lançamento identificado com sucesso!",
-    "confirmAndSave": "Confirmar Lançamento"
+    "confirmAndSave": "Confirmar Lançamento",
+    "interpretWithAi": "Interpretar com IA",
+    "interpreting": "Interpretando..."
+  },
+  "Categories": {
+    "title": "Categorias de Gastos",
+    "subtitle": "Personalize as categorias familiares e organize seu orçamento",
+    "newCategory": "Nova Categoria",
+    "createCategory": "Criar Categoria",
+    "categoryName": "Nome da Categoria",
+    "categoryColor": "Cor de Identificação",
+    "active": "Ativa"
   }
 }
