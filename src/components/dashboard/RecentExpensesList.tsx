@@ -5,7 +5,8 @@ import { Badge } from '../ui/Badge';
 import { Calendar, Layers, Repeat, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatDateDisplay } from '@/lib/formatters';
 
 export interface RecentExpenseItem {
   id: string;
@@ -13,14 +14,17 @@ export interface RecentExpenseItem {
   amount: number;
   dueDate: string;
   status: 'paid' | 'pending';
+  categoryId?: string;
   categoryName: string;
   categoryColor: string;
+  payerMemberId?: string;
   payerName: string;
   payerRole: 'admin' | 'member' | 'child';
   payerAvatarKey: string;
   expenseType: 'single' | 'installment' | 'recurring';
   installmentInfo?: string; // e.g. "3/10"
   splitSummary?: string; // e.g. "Dividido 50% / 50%"
+  notes?: string;
 }
 
 export interface RecentExpensesListProps {
@@ -34,6 +38,7 @@ export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({
   onToggleStatus,
   onEditExpense,
 }) => {
+  const locale = useLocale();
   const tDash = useTranslations('Dashboard');
   const tCommon = useTranslations('Common');
 
@@ -107,7 +112,7 @@ export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-on-surface-variant">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {expense.dueDate}
+                        {formatDateDisplay(expense.dueDate, locale)}
                       </span>
                       <span>•</span>
                       <span

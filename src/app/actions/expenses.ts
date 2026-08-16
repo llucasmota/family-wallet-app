@@ -140,19 +140,28 @@ export async function updateExpenseAction(payload: {
   try {
     const paymentDate = payload.status === 'paid' ? new Date().toISOString().split('T')[0] : null;
 
+    const updateData: Record<string, any> = {
+      description: payload.description.trim(),
+      amount: payload.amount.toFixed(2),
+      dueDate: payload.dueDate,
+      status: payload.status,
+      paymentDate,
+      updatedAt: new Date(),
+    };
+
+    if (payload.categoryId) {
+      updateData.categoryId = payload.categoryId;
+    }
+    if (payload.payerMemberId) {
+      updateData.payerMemberId = payload.payerMemberId;
+    }
+    if (payload.notes !== undefined) {
+      updateData.notes = payload.notes;
+    }
+
     const [updated] = await db
       .update(expenses)
-      .set({
-        description: payload.description.trim(),
-        amount: payload.amount.toFixed(2),
-        dueDate: payload.dueDate,
-        ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
-        ...(payload.payerMemberId ? { payerMemberId: payload.payerMemberId } : {}),
-        ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
-        status: payload.status,
-        paymentDate,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(expenses.id, payload.expenseId))
       .returning();
 
@@ -214,14 +223,17 @@ export async function getDashboardDataAction(familyId: string, referenceDateStr?
       amount: parseFloat(e.amount),
       dueDate: e.dueDate,
       status: e.status,
+      categoryId: e.categoryId,
       categoryName: e.category?.name || 'Geral',
       categoryColor: e.category?.color || '#2D7D62',
+      payerMemberId: e.payerMemberId,
       payerName: e.payer?.displayName || 'Membro',
       payerRole: e.payer?.role || 'member',
       payerAvatarKey: e.payer?.avatarKey || 'husband',
       expenseType: e.expenseType,
       installmentInfo: e.installmentNumber ? `${e.installmentNumber}/${e.totalInstallments}` : undefined,
       splitSummary: 'Dividido 50% / 50%',
+      notes: e.notes,
     }));
 
     return { success: true, metrics, recentExpenses: formattedRecent };

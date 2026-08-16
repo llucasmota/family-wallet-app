@@ -59,10 +59,23 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
     if (expense) {
       setDescription(expense.description || '');
       setAmount(expense.amount ? expense.amount : 0);
-      setDueDate(expense.dueDate || new Date().toISOString().split('T')[0]);
+      setDueDate(expense.dueDate ? expense.dueDate.split('T')[0] : new Date().toISOString().split('T')[0]);
       setStatus(expense.status || 'pending');
-      setCategoryId(expense.categoryId || categories[0]?.id || '');
-      setPayerMemberId(expense.payerMemberId || members[0]?.id || '');
+
+      const foundCatId =
+        expense.categoryId ||
+        categories.find((c) => c.name === (expense as any).categoryName)?.id ||
+        categories[0]?.id ||
+        '';
+      setCategoryId(foundCatId);
+
+      const foundPayerId =
+        expense.payerMemberId ||
+        members.find((m) => m.displayName === (expense as any).payerName)?.id ||
+        members[0]?.id ||
+        '';
+      setPayerMemberId(foundPayerId);
+
       setPaymentMethod(extractPaymentMethod(expense.notes));
     }
   }, [expense, categories, members]);

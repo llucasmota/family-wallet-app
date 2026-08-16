@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -31,8 +31,10 @@ import { getFamilyDataAction } from '@/app/actions/family';
 import { getDashboardDataAction, toggleExpenseStatusAction, deleteExpenseAction, addExpenseAction } from '@/app/actions/expenses';
 import { extractPaymentMethod } from '@/services/payment-methods';
 import { ExtractedExpenseDraft } from '@/services/ai/types';
+import { formatDateDisplay } from '@/lib/formatters';
 
 export default function ExpensesPage() {
+  const locale = useLocale();
   const tExp = useTranslations('Expenses');
   const tCommon = useTranslations('Common');
   const tNav = useTranslations('Navigation');
@@ -301,7 +303,7 @@ export default function ExpensesPage() {
                               {item.categoryName}
                             </span>
                             <span>•</span>
-                            <span>{item.dueDate}</span>
+                            <span>{formatDateDisplay(item.dueDate, locale)}</span>
                           </div>
                         </div>
                       </div>
@@ -456,7 +458,7 @@ export default function ExpensesPage() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-on-surface-variant">{item.splitSummary}</td>
-                          <td className="py-3 px-4 text-on-surface-variant">{item.dueDate}</td>
+                          <td className="py-3 px-4 text-on-surface-variant">{formatDateDisplay(item.dueDate, locale)}</td>
                           <td className="py-3 px-4 font-bold text-on-surface">
                             {formatCurrency(item.amount)}
                           </td>
