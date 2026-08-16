@@ -16,6 +16,16 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// 1.1 Beta Access Requests & Whitelist
+export const betaAccessRequests = pgTable('beta_access_requests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
+  status: text('status').default('pending').notNull(), // 'pending' | 'approved' | 'rejected'
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+});
+
 // 2. Families (Multi-tenancy group)
 export const families = pgTable('families', {
   id: uuid('id').defaultRandom().primaryKey(),

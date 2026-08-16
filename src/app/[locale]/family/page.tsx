@@ -26,6 +26,7 @@ import {
   RotateCcw,
   AlertTriangle,
   UserX,
+  ShieldCheck,
 } from 'lucide-react';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
@@ -42,6 +43,12 @@ import {
   deleteOrInactivateMemberAction,
   reactivateMemberAction,
 } from '@/app/actions/family';
+import {
+  getBetaRequestsAction,
+  approveBetaRequestAction,
+  rejectBetaRequestAction,
+  deleteBetaRequestAction,
+} from '@/app/actions/auth';
 import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, getAdaptedEmoji } from '@/components/ui/AvatarPresets';
 
 export default function FamilyPage() {
@@ -57,6 +64,8 @@ export default function FamilyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSettling, setIsSettling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [betaRequests, setBetaRequests] = useState<any[]>([]);
+  const [isProcessingBeta, setIsProcessingBeta] = useState(false);
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error'; isVisible: boolean }>({
@@ -131,6 +140,12 @@ export default function FamilyPage() {
             setDebtorId(res.family.members[1].id);
           }
         }
+      }
+
+      // Fetch beta access requests
+      const betaRes = await getBetaRequestsAction();
+      if (betaRes.success && betaRes.requests) {
+        setBetaRequests(betaRes.requests);
       }
     } catch (err) {
       console.error('Error fetching family:', err);
@@ -329,6 +344,57 @@ export default function FamilyPage() {
     } catch (err: any) {
       console.error(err);
       showToast(err.message || 'Erro inesperado ao reativar membro', 'error');
+    }
+  };
+
+  const handleApproveBeta = async (requestId: string) => {
+    setIsProcessingBeta(true);
+    try {
+      const res = await approveBetaRequestAction(requestId);
+      if (res.success) {
+        showToast(res.message || 'Acesso aprovado com sucesso!');
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao aprovar acesso', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Erro ao aprovar', 'error');
+    } finally {
+      setIsProcessingBeta(false);
+    }
+  };
+
+  const handleRejectBeta = async (requestId: string) => {
+    setIsProcessingBeta(true);
+    try {
+      const res = await rejectBetaRequestAction(requestId);
+      if (res.success) {
+        showToast(res.message || 'Solicitação rejeitada.');
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao rejeitar', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Erro ao rejeitar', 'error');
+    } finally {
+      setIsProcessingBeta(false);
+    }
+  };
+
+  const handleDeleteBeta = async (requestId: string) => {
+    setIsProcessingBeta(true);
+    try {
+      const res = await deleteBetaRequestAction(requestId);
+      if (res.success) {
+        showToast(res.message || 'Solicitação excluída.');
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao excluir', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Erro ao excluir', 'error');
+    } finally {
+      setIsProcessingBeta(false);
     }
   };
 
@@ -689,6 +755,122 @@ export default function FamilyPage() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Beta Access Requests Management (Admin Gatekeeper) */}
+        <div className="flex flex-col gap-3 pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-semibold text-on-surface">
+                Aprovações de Acesso Beta ({betaRequests.filter((r) => r.status === 'pending').length} pendente{betaRequests.filter((r) => r.status === 'pending').length === 1 ? '' : 's'})
+              </h2>
+            </div>
+          </div>
+
+          <Card variant="elevated" className="p-5 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-on-surface-variant border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
+              <p>
+                Como estamos em fase beta, apenas pessoas aprovadas nesta lista conseguem criar um login e senha no app.
+              </p>
+              <span className="text-[11px] font-semibold text-primary">
+                Total de solicitações: {betaRequests.length}
+              </span>
+            </div>
+
+            {betaRequests.length === 0 ? (
+              <div className="py-6 text-center text-xs text-on-surface-variant">
+                🛡️ Nenhuma solicitação de acesso beta registrada no momento. Novos cadastros aparecerão aqui automaticamente.
+              </div>
+            ) : (
+              <div className="flex flex-col divide-y divide-outline-variant/10">
+                {betaRequests.map((req) => (
+                  <div
+                    key={req.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container text-on-surface-variant font-bold text-xs">
+                        {req.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-on-surface text-xs">{req.name}</span>
+                          {req.status === 'approved' && (
+                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              ✓ Aprovado
+                            </span>
+                          )}
+                          {req.status === 'pending' && (
+                            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-500 border border-amber-500/20">
+                              🟡 Aguardando Aprovação
+                            </span>
+                          )}
+                          {req.status === 'rejected' && (
+                            <span className="rounded bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-bold text-rose-500 border border-rose-500/20">
+                              ✕ Rejeitado
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-on-surface-variant">{req.email}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      {req.status !== 'approved' && (
+                        <Button
+                          variant="filled"
+                          size="sm"
+                          onClick={() => handleApproveBeta(req.id)}
+                          disabled={isProcessingBeta}
+                          className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          Aprovar
+                        </Button>
+                      )}
+
+                      {req.status === 'approved' && (
+                        <Button
+                          variant="outlined"
+                          size="sm"
+                          onClick={() => handleRejectBeta(req.id)}
+                          disabled={isProcessingBeta}
+                          className="h-7 text-xs px-2.5 text-amber-500 border-amber-500/30"
+                        >
+                          Revogar
+                        </Button>
+                      )}
+
+                      {req.status === 'pending' && (
+                        <Button
+                          variant="outlined"
+                          size="sm"
+                          onClick={() => handleRejectBeta(req.id)}
+                          disabled={isProcessingBeta}
+                          className="h-7 text-xs px-2.5 text-rose-500 border-rose-500/30"
+                        >
+                          Rejeitar
+                        </Button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBeta(req.id)}
+                        disabled={isProcessingBeta}
+                        title="Excluir solicitação"
+                        className="flex h-7 w-7 items-center justify-center rounded-m3-sm border border-outline-variant/30 text-on-surface-variant hover:text-error hover:border-error/40 hover:bg-error/10 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       </main>
 

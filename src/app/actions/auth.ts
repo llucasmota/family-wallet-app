@@ -2,10 +2,25 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/db';
-import { users, familyMembers, families } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, familyMembers, families, betaAccessRequests } from '@/db/schema';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+
+async function ensureBetaTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS beta_access_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        approved_at TIMESTAMPTZ
+      );
+    `);
+  } catch {}
+}
 
 export async function signInAction(formData: { email: string; password: string }) {
   const supabase = await createClient();
@@ -24,8 +39,51 @@ export async function signInAction(formData: { email: string; password: string }
 }
 
 export async function signUpAction(formData: { email: string; password: string; name: string }) {
-  const supabase = await createClient();
+  await ensureBetaTable();
+  const normalizedEmail = formData.email.trim().toLowerCase();
 
+  // 1. Beta Whitelist Gate: Check if user is allowed to signup
+  try {
+    const existingUsers = await db.query.users.findMany({ limit: 2 });
+
+    // If there is already at least 1 user (system is running), enforce beta approval
+    if (existingUsers.length > 0) {
+      const isAlreadyRegistered = existingUsers.some(
+        (u) => u.email.toLowerCase() === normalizedEmail
+      );
+
+      if (!isAlreadyRegistered) {
+        const betaReq = await db.query.betaAccessRequests.findFirst({
+          where: eq(betaAccessRequests.email, normalizedEmail),
+        });
+
+        if (!betaReq || betaReq.status !== 'approved') {
+          // Record or ensure pending request exists
+          if (!betaReq) {
+            try {
+              await db.insert(betaAccessRequests).values({
+                email: normalizedEmail,
+                name: formData.name.trim() || 'Usuário Beta',
+                status: 'pending',
+              });
+            } catch {}
+          }
+
+          return {
+            success: false,
+            isBetaPending: true,
+            email: normalizedEmail,
+            error:
+              'Aplicativo em fase Beta Restrita. Sua solicitação de acesso foi enviada ao administrador e está aguardando aprovação prévia.',
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error checking beta access:', e);
+  }
+
+  const supabase = await createClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const { data, error } = await supabase.auth.signUp({
@@ -46,11 +104,14 @@ export async function signUpAction(formData: { email: string; password: string; 
   // If user registered, make sure they have a record in `users` table
   if (data.user) {
     try {
-      await db.insert(users).values({
-        id: data.user.id,
-        email: formData.email,
-        name: formData.name,
-      }).onConflictDoNothing();
+      await db
+        .insert(users)
+        .values({
+          id: data.user.id,
+          email: formData.email,
+          name: formData.name,
+        })
+        .onConflictDoNothing();
     } catch (e) {
       console.error('Error syncing user record:', e);
     }
@@ -60,6 +121,67 @@ export async function signUpAction(formData: { email: string; password: string; 
 
   revalidatePath('/', 'layout');
   return { success: true, requiresVerification, email: formData.email };
+}
+
+export async function getBetaRequestsAction() {
+  await ensureBetaTable();
+  try {
+    const requests = await db.query.betaAccessRequests.findMany({
+      orderBy: [desc(betaAccessRequests.createdAt)],
+    });
+    return { success: true, requests };
+  } catch (err: any) {
+    return { success: false, error: err.message, requests: [] };
+  }
+}
+
+export async function approveBetaRequestAction(requestId: string) {
+  await ensureBetaTable();
+  try {
+    await db
+      .update(betaAccessRequests)
+      .set({
+        status: 'approved',
+        approvedAt: new Date(),
+      })
+      .where(eq(betaAccessRequests.id, requestId));
+
+    revalidatePath('/family');
+    return { success: true, message: '✨ Acesso aprovado com sucesso! O usuário já pode criar o login.' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function rejectBetaRequestAction(requestId: string) {
+  await ensureBetaTable();
+  try {
+    await db
+      .update(betaAccessRequests)
+      .set({
+        status: 'rejected',
+      })
+      .where(eq(betaAccessRequests.id, requestId));
+
+    revalidatePath('/family');
+    return { success: true, message: 'Solicitação rejeitada.' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deleteBetaRequestAction(requestId: string) {
+  await ensureBetaTable();
+  try {
+    await db
+      .delete(betaAccessRequests)
+      .where(eq(betaAccessRequests.id, requestId));
+
+    revalidatePath('/family');
+    return { success: true, message: 'Solicitação excluída com sucesso.' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
 }
 
 export async function resetPasswordAction(email: string) {
@@ -98,8 +220,6 @@ export async function signOutAction() {
   revalidatePath('/', 'layout');
   redirect('/auth');
 }
-
-import { and } from 'drizzle-orm';
 
 export async function joinFamilyAction(payload: {
   familyId: string;

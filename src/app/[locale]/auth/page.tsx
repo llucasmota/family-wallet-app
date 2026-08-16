@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Wallet, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, Inbox, KeyRound, ArrowLeft } from 'lucide-react';
+import { Wallet, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, Inbox, KeyRound, ArrowLeft, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signInAction, signUpAction, resetPasswordAction } from '@/app/actions/auth';
 
@@ -16,6 +16,8 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isVerificationPending, setIsVerificationPending] = useState(false);
+  const [isBetaWaitlist, setIsBetaWaitlist] = useState(false);
+  const [betaEmail, setBetaEmail] = useState('');
   const [isResetLinkSent, setIsResetLinkSent] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
 
@@ -51,6 +53,9 @@ export default function AuthPage() {
           } else {
             router.push('/');
           }
+        } else if (res.isBetaPending) {
+          setBetaEmail(res.email || email);
+          setIsBetaWaitlist(true);
         } else {
           setErrorMessage(formatAuthError(res.error));
         }
@@ -75,6 +80,53 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
+
+  // Dedicated View for Beta Approval Pending
+  if (isBetaWaitlist) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface p-4 transition-colors duration-200">
+        <Card variant="elevated" className="w-full max-w-md p-8 flex flex-col items-center text-center gap-5 shadow-m3-3">
+          <div className="flex h-16 w-16 items-center justify-center rounded-m3-full bg-amber-500/10 text-amber-500 shadow-m3-1 animate-pulse">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-500 border border-amber-500/20">
+                Fase Beta Restrita
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-on-surface">Solicitação de Acesso Enviada</h2>
+            <p className="text-xs text-on-surface-variant max-w-sm leading-relaxed">
+              O <strong>Family Wallet</strong> está em período de testes fechados para convidados.
+            </p>
+            <div className="rounded-m3-md bg-surface-container p-3 text-xs text-on-surface-variant text-left mt-1 border border-outline-variant/20">
+              <p>
+                Sua solicitação com o e-mail <strong className="text-on-surface">{betaEmail}</strong> foi registrada e enviada ao administrador do sistema.
+              </p>
+              <p className="mt-2 text-[11px] text-on-surface-variant/80">
+                Assim que seu acesso for liberado pelo administrador, você poderá retornar a esta tela e cadastrar sua senha normalmente.
+              </p>
+            </div>
+          </div>
+
+          <div className="w-full border-t border-outline-variant/20 dark:border-white/[0.06] pt-4">
+            <Button
+              variant="filled"
+              size="md"
+              onClick={() => {
+                setIsBetaWaitlist(false);
+                setAuthMode('login');
+              }}
+              className="w-full"
+            >
+              Voltar para o Login
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   // Dedicated View for Email Confirmation Required on Signup
   if (isVerificationPending) {
