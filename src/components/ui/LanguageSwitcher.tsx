@@ -23,16 +23,18 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   const handleSelectLocale = (targetLocale: 'pt-BR' | 'en') => {
     if (targetLocale === currentLocale) return;
 
-    // Set cookie for persistence
+    // Set cookie for persistence (1 year)
     document.cookie = `NEXT_LOCALE=${targetLocale}; path=/; max-age=31536000; SameSite=Lax`;
 
+    let targetPath = '/';
     if (targetLocale === 'en') {
-      const cleanPath = pathname.startsWith('/en') ? pathname : `/en${pathname === '/' ? '' : pathname}`;
-      router.push(cleanPath);
+      targetPath = pathname.startsWith('/en') ? pathname : `/en${pathname === '/' ? '' : pathname}`;
     } else {
-      const cleanPath = pathname.replace(/^\/en/, '') || '/';
-      router.push(cleanPath);
+      targetPath = pathname.replace(/^\/en/, '') || '/';
     }
+
+    // Force full page reload to completely re-hydrate Server Components and getMessages()
+    window.location.href = targetPath;
   };
 
   if (variant === 'menu') {
