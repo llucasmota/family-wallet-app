@@ -61,11 +61,14 @@
     "dueAlert": "You have {count} bill(s) due soon totaling {total}."
   },
   "C6Card": {
-    "title": "C6 Bank Invoice (Joint Card)",
-    "subtitle": "Consolidated expenses on the couple credit card",
-    "totalInvoice": "Total Invoice",
-    "sharedResponsibility": "Invoice Payment Responsibility",
-    "noExpenses": "No expenses logged on the C6 card this month."
+    "title": "C6 Card Invoice",
+    "viewExpenses": "View purchases",
+    "invoiceTotal": "Current Invoice",
+    "statusPaid": "Paid",
+    "statusPending": "Open / Due",
+    "purchasesCount": "{count} purchases this month",
+    "splitTitle": "Invoice Responsibility Split",
+    "noExpenses": "No purchases logged on C6 card this month."
   },
   "Expenses": {
     "title": "Expenses Statement",

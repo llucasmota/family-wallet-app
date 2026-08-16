@@ -61,11 +61,14 @@
     "dueAlert": "Você tem {count} conta(s) a vencer nos próximos dias somando {total}."
   },
   "C6Card": {
-    "title": "Fatura C6 Bank (Cartão Conjunto)",
-    "subtitle": "Gastos consolidados no cartão de crédito do casal",
-    "totalInvoice": "Total da Fatura",
-    "sharedResponsibility": "Divisão da Fatura a Pagar",
-    "noExpenses": "Nenhum gasto lançado no cartão C6 este mês."
+    "title": "Fatura Cartão C6",
+    "viewExpenses": "Ver compras",
+    "invoiceTotal": "Fatura Atual",
+    "statusPaid": "Fatura Paga",
+    "statusPending": "Em Aberto",
+    "purchasesCount": "{count} compras no mês",
+    "splitTitle": "Divisão da Fatura entre o Casal",
+    "noExpenses": "Nenhuma compra lançada no cartão C6 este mês."
   },
   "Expenses": {
     "title": "Extrato de Despesas",
