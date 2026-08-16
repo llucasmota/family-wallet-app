@@ -472,3 +472,73 @@ export async function updateFamilyCurrencyWithConversionAction(payload: {
     return { success: false, error: error.message || 'Falha ao atualizar moeda do grupo' };
   }
 }
+
+export async function resetFamilyDataAction() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Usuário não autenticado.' };
+  }
+
+  try {
+    const [family] = await db.query.families.findMany({
+      limit: 1,
+      with: {
+        members: true,
+      },
+    });
+
+    if (!family) {
+      return { success: false, error: 'Família não encontrada.' };
+    }
+
+    // 1. Clear all expenses, splits and settlements
+    await db.delete(expenseSplits);
+    await db.delete(expenses);
+    await db.delete(settlements);
+
+    // 2. Identify the admin member for lucas.o.mota@gmail.com
+    const adminMember =
+      family.members.find((m) => m.userId === user.id) ||
+      family.members.find((m) => m.role === 'admin') ||
+      family.members[0];
+
+    if (adminMember) {
+      // Ensure admin member is active and has correct userId
+      await db
+        .update(familyMembers)
+        .set({
+          userId: user.id,
+          role: 'admin',
+          isActive: true,
+        })
+        .where(eq(familyMembers.id, adminMember.id));
+
+      // Remove all other duplicate family members
+      await db
+        .delete(familyMembers)
+        .where(
+          and(
+            eq(familyMembers.familyId, family.id),
+            sql`${familyMembers.id} != ${adminMember.id}`
+          )
+        );
+    }
+
+    revalidatePath('/');
+    revalidatePath('/expenses');
+    revalidatePath('/family');
+    revalidatePath('/categories');
+
+    return {
+      success: true,
+      message: '✨ Dados de teste limpos com sucesso! Apenas seu usuário foi mantido no grupo.',
+    };
+  } catch (err: any) {
+    console.error('Error resetting family data:', err);
+    return { success: false, error: err.message || 'Erro ao limpar dados de teste' };
+  }
+}

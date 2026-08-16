@@ -42,6 +42,7 @@ import {
   addMemberAction,
   deleteOrInactivateMemberAction,
   reactivateMemberAction,
+  resetFamilyDataAction,
 } from '@/app/actions/family';
 import {
   getBetaRequestsAction,
@@ -58,6 +59,8 @@ export default function FamilyPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [isMemberEditOpen, setIsMemberEditOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -395,6 +398,25 @@ export default function FamilyPage() {
       showToast(err?.message || 'Erro ao excluir', 'error');
     } finally {
       setIsProcessingBeta(false);
+    }
+  };
+
+  const handleConfirmReset = async () => {
+    setIsResetting(true);
+    try {
+      const res = await resetFamilyDataAction();
+      if (res.success) {
+        showToast(res.message || 'Dados limpos com sucesso!');
+        setIsResetConfirmOpen(false);
+        setIsGroupSettingsOpen(false);
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao limpar dados', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Erro inesperado ao limpar dados', 'error');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -982,18 +1004,31 @@ export default function FamilyPage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-outline-variant/20 dark:border-white/[0.06]">
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-outline-variant/20 dark:border-white/[0.06]">
                 <Button
-                  variant="text"
+                  variant="outlined"
                   size="sm"
                   type="button"
-                  onClick={() => setIsGroupSettingsOpen(false)}
+                  onClick={() => setIsResetConfirmOpen(true)}
+                  className="text-error border-error/30 hover:bg-error/10 text-xs gap-1.5"
                 >
-                  Cancelar
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Limpar Dados de Teste
                 </Button>
-                <Button variant="filled" size="md" type="submit" disabled={isSaving}>
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Configurações'}
-                </Button>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="text"
+                    size="sm"
+                    type="button"
+                    onClick={() => setIsGroupSettingsOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button variant="filled" size="md" type="submit" disabled={isSaving}>
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
+                  </Button>
+                </div>
               </div>
             </form>
           </Card>
@@ -1450,6 +1485,74 @@ export default function FamilyPage() {
                   <>
                     <Trash2 className="h-4 w-4" />
                     Confirmar Remoção
+                  </>
+                )}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Reset Family Test Data Confirmation Modal */}
+      {isResetConfirmOpen && (
+        <div
+          onClick={() => setIsResetConfirmOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <Card
+            variant="elevated"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md shadow-m3-3 flex flex-col gap-4 p-5"
+          >
+            <div className="flex items-center gap-3 text-error">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-on-surface">Limpar Dados de Teste</h3>
+                <p className="text-xs text-on-surface-variant">Reiniciar o grupo familiar do zero</p>
+              </div>
+            </div>
+
+            <div className="text-xs text-on-surface-variant flex flex-col gap-2 rounded-m3-md bg-surface-container p-3.5 border border-outline-variant/20">
+              <p className="font-semibold text-on-surface">
+                Esta ação irá:
+              </p>
+              <ul className="list-disc pl-4 space-y-1.5">
+                <li>Apagar todos os <strong>gastos, rateios e acertos de teste</strong> já lançados.</li>
+                <li>Remover todos os <strong>membros e cadastros duplicados</strong> do grupo.</li>
+                <li>Manter <strong>apenas o seu usuário principal como Administrador</strong>.</li>
+              </ul>
+              <p className="mt-1 text-[11px] text-amber-500 font-medium">
+                Após a limpeza, você poderá convidar sua esposa para começar o uso real sem nenhum dado residual!
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20 dark:border-white/[0.06]">
+              <Button
+                variant="text"
+                size="sm"
+                onClick={() => setIsResetConfirmOpen(false)}
+                disabled={isResetting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="filled"
+                size="md"
+                onClick={handleConfirmReset}
+                disabled={isResetting}
+                className="bg-error hover:bg-error/90 text-white gap-1.5"
+              >
+                {isResetting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Limpando dados...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Confirmar Limpeza
                   </>
                 )}
               </Button>
