@@ -136,6 +136,7 @@ export async function updateExpenseAction(payload: {
   payerMemberId?: string;
   status: 'paid' | 'pending';
   notes?: string;
+  splits?: Array<{ memberId: string; percentage: number }>;
 }) {
   try {
     const paymentDate = payload.status === 'paid' ? new Date().toISOString().split('T')[0] : null;
@@ -164,6 +165,20 @@ export async function updateExpenseAction(payload: {
       .set(updateData)
       .where(eq(expenses.id, payload.expenseId))
       .returning();
+
+    // If splits provided, recalculate and update expense_splits
+    if (payload.splits && payload.splits.length > 0) {
+      await db.delete(expenseSplits).where(eq(expenseSplits.expenseId, payload.expenseId));
+
+      const newSplits = payload.splits.map((s) => ({
+        expenseId: payload.expenseId,
+        memberId: s.memberId,
+        percentage: s.percentage.toFixed(2),
+        computedAmount: ((payload.amount * s.percentage) / 100).toFixed(2),
+      }));
+
+      await db.insert(expenseSplits).values(newSplits);
+    }
 
     revalidatePath('/');
     revalidatePath('/expenses');
@@ -217,24 +232,44 @@ export async function getDashboardDataAction(familyId: string, referenceDateStr?
     });
 
     // Format for frontend consumption
-    const formattedRecent = rawExpenses.map((e) => ({
-      id: e.id,
-      description: e.description,
-      amount: parseFloat(e.amount),
-      dueDate: e.dueDate,
-      status: e.status,
-      categoryId: e.categoryId,
-      categoryName: e.category?.name || 'Geral',
-      categoryColor: e.category?.color || '#2D7D62',
-      payerMemberId: e.payerMemberId,
-      payerName: e.payer?.displayName || 'Membro',
-      payerRole: e.payer?.role || 'member',
-      payerAvatarKey: e.payer?.avatarKey || 'husband',
-      expenseType: e.expenseType,
-      installmentInfo: e.installmentNumber ? `${e.installmentNumber}/${e.totalInstallments}` : undefined,
-      splitSummary: 'Dividido 50% / 50%',
-      notes: e.notes,
-    }));
+    const formattedRecent = rawExpenses.map((e) => {
+      const splitsArray = (e.splits || []).map((s) => ({
+        memberId: s.memberId,
+        percentage: parseFloat(s.percentage),
+        amount: parseFloat(s.computedAmount),
+      }));
+
+      let dynamicSplitSummary = 'Dividido 50% / 50%';
+      if (splitsArray.length > 0) {
+        if (splitsArray.length === 1 && splitsArray[0].percentage === 100) {
+          dynamicSplitSummary = '100% Individual';
+        } else {
+          dynamicSplitSummary = splitsArray
+            .map((s) => `${Math.round(s.percentage)}%`)
+            .join(' / ');
+        }
+      }
+
+      return {
+        id: e.id,
+        description: e.description,
+        amount: parseFloat(e.amount),
+        dueDate: e.dueDate,
+        status: e.status,
+        categoryId: e.categoryId,
+        categoryName: e.category?.name || 'Geral',
+        categoryColor: e.category?.color || '#2D7D62',
+        payerMemberId: e.payerMemberId,
+        payerName: e.payer?.displayName || 'Membro',
+        payerRole: e.payer?.role || 'member',
+        payerAvatarKey: e.payer?.avatarKey || 'husband',
+        expenseType: e.expenseType,
+        installmentInfo: e.installmentNumber ? `${e.installmentNumber}/${e.totalInstallments}` : undefined,
+        splitSummary: dynamicSplitSummary,
+        splits: splitsArray,
+        notes: e.notes,
+      };
+    });
 
     return { success: true, metrics, recentExpenses: formattedRecent };
   } catch (error: any) {

@@ -65,3 +65,36 @@ describe('Payment Methods and Notes Extraction', () => {
     expect(extractCleanNotes(updatedNotes)).toBe('Mercado mensal');
   });
 });
+
+describe('Split Ratio and Participation Calculations', () => {
+  it('correctly calculates custom 40% / 60% split values', () => {
+    const total = 225.06;
+    const husbandPercent = 40;
+    const wifePercent = 60;
+
+    const husbandAmount = parseFloat(((total * husbandPercent) / 100).toFixed(2));
+    const wifeAmount = parseFloat(((total * wifePercent) / 100).toFixed(2));
+
+    expect(husbandAmount).toBe(90.02);
+    expect(wifeAmount).toBe(135.04);
+    expect(husbandAmount + wifeAmount).toBe(225.06);
+  });
+
+  it('correctly formats custom 40% / 60% dynamic split summary string', () => {
+    const splits = [
+      { memberId: 'm1', percentage: 40 },
+      { memberId: 'm2', percentage: 60 },
+    ];
+    const summary = splits.map((s) => `${Math.round(s.percentage)}%`).join(' / ');
+    expect(summary).toBe('40% / 60%');
+  });
+
+  it('correctly formats 100% / 0% individual expense split', () => {
+    const splits = [{ memberId: 'm1', percentage: 100 }];
+    const summary = splits.length === 1 && splits[0].percentage === 100
+      ? '100% Individual'
+      : splits.map((s) => `${Math.round(s.percentage)}%`).join(' / ');
+    expect(summary).toBe('100% Individual');
+  });
+});
+

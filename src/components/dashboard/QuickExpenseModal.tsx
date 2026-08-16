@@ -444,7 +444,7 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                 ))}
               </div>
 
-              {/* Payment Method Selector */}
+              {/* Payment Method Selector (Refined High-Contrast Aesthetic) */}
               <div>
                 <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">
                   Meio de Pagamento
@@ -457,10 +457,10 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                         key={pm.key}
                         type="button"
                         onClick={() => setPaymentMethod(pm.key)}
-                        className={`flex items-center justify-center gap-1.5 p-2 rounded-m3-md border text-xs font-semibold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-m3-md text-xs font-semibold transition-all ${
                           isSelected
-                            ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30'
-                            : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
+                            ? 'border-2 border-primary bg-primary/15 dark:bg-[#153428] text-primary shadow-[0_0_15px_rgba(46,125,94,0.35)] dark:shadow-[0_0_18px_rgba(46,125,94,0.4)] scale-[1.02]'
+                            : 'border border-outline-variant/30 dark:border-white/10 bg-surface-container-high dark:bg-[#1A231E] text-on-surface-variant hover:text-on-surface hover:border-outline-variant/60 hover:bg-surface-container-highest dark:hover:bg-[#222E28]'
                         }`}
                       >
                         <span>{pm.badgeLabel}</span>
@@ -498,16 +498,20 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
-                    Divisão da Conta
+                    Divisão da Conta (Rateio)
                   </label>
-                  <div className="flex gap-2 text-xs">
+                  <div className="flex gap-1.5 text-xs">
                     <button
                       type="button"
-                      onClick={() => setSplitMode('equal')}
-                      className={`px-2 py-0.5 rounded-m3-sm ${
+                      onClick={() => {
+                        setSplitMode('equal');
+                        setCustomHusband(50);
+                        setCustomWife(50);
+                      }}
+                      className={`px-2.5 py-1 rounded-m3-sm font-medium transition-colors ${
                         splitMode === 'equal'
-                          ? 'bg-primary-container text-primary font-semibold'
-                          : 'text-on-surface-variant'
+                          ? 'bg-primary-container text-primary font-bold'
+                          : 'text-on-surface-variant hover:bg-surface-container'
                       }`}
                     >
                       50% / 50%
@@ -515,10 +519,10 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setSplitMode('custom')}
-                      className={`px-2 py-0.5 rounded-m3-sm ${
+                      className={`px-2.5 py-1 rounded-m3-sm font-medium transition-colors ${
                         splitMode === 'custom'
-                          ? 'bg-primary-container text-primary font-semibold'
-                          : 'text-on-surface-variant'
+                          ? 'bg-primary-container text-primary font-bold'
+                          : 'text-on-surface-variant hover:bg-surface-container'
                       }`}
                     >
                       Personalizado
@@ -527,15 +531,49 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                 </div>
 
                 {splitMode === 'custom' && (
-                  <div className="flex flex-col gap-2 rounded-m3-md bg-surface-container dark:bg-[#141816] p-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span>
-                        {husbandName}: <strong>{customHusband}%</strong>
-                      </span>
-                      <span>
-                        {wifeName}: <strong>{customWife}%</strong>
-                      </span>
+                  <div className="flex flex-col gap-3 rounded-m3-md bg-surface-container dark:bg-[#141816] p-3 text-xs border border-outline-variant/30">
+                    {/* Numeric inputs for exact percentages */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-on-surface-variant font-medium truncate">{husbandName}:</span>
+                        <div className="flex items-center gap-1.5 bg-surface dark:bg-[#1C2520] border border-outline-variant/40 rounded-m3-sm px-2.5 py-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={customHusband}
+                            onChange={(e) => {
+                              const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                              setCustomHusband(val);
+                              setCustomWife(100 - val);
+                            }}
+                            className="w-full bg-transparent font-bold text-on-surface text-sm focus:outline-none"
+                          />
+                          <span className="font-bold text-primary">%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-on-surface-variant font-medium truncate">{wifeName}:</span>
+                        <div className="flex items-center gap-1.5 bg-surface dark:bg-[#1C2520] border border-outline-variant/40 rounded-m3-sm px-2.5 py-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={customWife}
+                            onChange={(e) => {
+                              const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                              setCustomWife(val);
+                              setCustomHusband(100 - val);
+                            }}
+                            className="w-full bg-transparent font-bold text-on-surface text-sm focus:outline-none"
+                          />
+                          <span className="font-bold text-primary">%</span>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Range Slider */}
                     <input
                       type="range"
                       min="0"
@@ -546,8 +584,38 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                         setCustomHusband(h);
                         setCustomWife(100 - h);
                       }}
-                      className="w-full accent-primary"
+                      className="w-full accent-primary cursor-pointer mt-1"
                     />
+
+                    {/* Quick preset chips */}
+                    <div className="flex items-center justify-between text-[11px] pt-1">
+                      <span className="text-on-surface-variant">Atalhos:</span>
+                      <div className="flex gap-1.5">
+                        {[
+                          { h: 40, w: 60, label: '40 / 60' },
+                          { h: 50, w: 50, label: '50 / 50' },
+                          { h: 60, w: 40, label: '60 / 40' },
+                          { h: 70, w: 30, label: '70 / 30' },
+                          { h: 100, w: 0, label: '100 / 0' },
+                        ].map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              setCustomHusband(preset.h);
+                              setCustomWife(preset.w);
+                            }}
+                            className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold transition-all ${
+                              customHusband === preset.h
+                                ? 'bg-primary text-white border-primary'
+                                : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
