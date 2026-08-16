@@ -92,19 +92,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
           </div>
 
           {/* Action Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             {/* Language Switcher Pill */}
             <LanguageSwitcher variant="pill" />
 
-            {/* Agent Mode Trigger */}
+            {/* Agent Mode Trigger - Visible on both Mobile & Desktop */}
             <Button
               variant="tonal"
               size="sm"
               onClick={onOpenAgent}
-              className="gap-1.5 text-xs font-semibold bg-primary-container/70 border border-primary/20 hidden sm:inline-flex"
+              aria-label={tNav('agentMode')}
+              title={tNav('agentMode')}
+              className="gap-1.5 text-xs font-semibold bg-primary-container/80 text-primary border border-primary/30 h-8 px-2 sm:px-3 sm:h-9"
             >
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span>{tNav('agentMode')}</span>
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="hidden sm:inline">{tNav('agentMode')}</span>
             </Button>
 
             {/* Quick Add Expense */}
@@ -112,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
               variant="filled"
               size="sm"
               onClick={onOpenQuickAdd}
-              className="gap-1 text-xs"
+              className="gap-1 text-xs h-8 px-2.5 sm:px-3 sm:h-9"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">{tNav('newExpense')}</span>

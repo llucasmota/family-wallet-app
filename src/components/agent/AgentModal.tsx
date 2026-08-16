@@ -174,20 +174,23 @@ export const AgentModal: React.FC<AgentModalProps> = ({ isOpen, onClose, onConfi
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200"
     >
       <Card
         variant="elevated"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg shadow-m3-3 flex flex-col gap-4"
+        className="w-full max-w-lg shadow-m3-3 flex flex-col gap-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-b-none sm:rounded-b-2xl rounded-t-3xl sm:rounded-t-2xl p-5 sm:p-6 border-b-0 sm:border-b"
       >
+        {/* Mobile Pull Handle */}
+        <div className="w-12 h-1.5 rounded-full bg-outline-variant/40 mx-auto -mt-2 mb-1 block sm:hidden" />
+
         <div className="flex items-center justify-between border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-m3-full bg-primary-container text-primary-on-container">
+            <div className="flex h-9 w-9 items-center justify-center rounded-m3-full bg-primary-container text-primary-on-container shadow-sm">
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-on-surface">Assistente Financeiro IA</h3>
+              <h3 className="font-semibold text-on-surface text-base">Assistente Financeiro IA</h3>
               <p className="text-xs text-on-surface-variant">Lançamento multimodal inteligente</p>
             </div>
           </div>

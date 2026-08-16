@@ -346,6 +346,7 @@ export default function DashboardPage() {
         members={familyData?.members as any}
         categories={familyData?.categories as any}
         onSuccess={loadData}
+        onOpenAgent={() => setIsAgentOpen(true)}
       />
 
       <MonthlyReportModal

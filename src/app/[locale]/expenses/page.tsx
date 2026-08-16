@@ -467,6 +467,7 @@ export default function ExpensesPage() {
         members={familyData?.members}
         categories={familyData?.categories}
         onSuccess={loadExpenses}
+        onOpenAgent={() => setIsAgentOpen(true)}
       />
 
       <EditExpenseModal

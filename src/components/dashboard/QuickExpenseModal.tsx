@@ -5,7 +5,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { Toast } from '../ui/Toast';
-import { X, Layers, Repeat, Users, Check, Loader2, ArrowRightLeft, DollarSign } from 'lucide-react';
+import { X, Layers, Repeat, Users, Check, Loader2, ArrowRightLeft, DollarSign, Sparkles } from 'lucide-react';
 import { addExpenseAction } from '@/app/actions/expenses';
 import { recordSettlementAction, getFamilyDataAction } from '@/app/actions/family';
 import { DEFAULT_CATEGORIES } from '@/db/default-categories';
@@ -19,6 +19,7 @@ export interface QuickExpenseModalProps {
   members?: Array<{ id: string; displayName: string; role: string }>;
   categories?: Array<{ id: string; name: string; color: string }>;
   onSuccess?: () => void;
+  onOpenAgent?: () => void;
 }
 
 export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
@@ -28,6 +29,7 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
   members = [],
   categories = [],
   onSuccess,
+  onOpenAgent,
 }) => {
   const [liveFamilyId, setLiveFamilyId] = useState(familyId || '');
   const [liveMembers, setLiveMembers] = useState(members);
@@ -211,6 +213,31 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* AI Assistant Quick Trigger Banner */}
+        {onOpenAgent && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenAgent();
+            }}
+            className="flex items-center justify-between p-2.5 rounded-m3-md bg-gradient-to-r from-primary/15 via-emerald-500/10 to-primary/5 border border-primary/25 text-xs font-semibold text-primary hover:bg-primary/20 transition-all group active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-m3-sm bg-primary text-white shadow-sm group-hover:scale-105 transition-transform">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="font-bold text-on-surface text-xs">Preencher com IA ✨</span>
+                <span className="text-[10px] text-on-surface-variant">Foto de comprovante, áudio de voz ou texto</span>
+              </div>
+            </div>
+            <span className="text-[10px] bg-primary text-white px-2.5 py-1 rounded-full font-bold shadow-xs">
+              Usar IA
+            </span>
+          </button>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Expense Type Selector with 4 tabs */}

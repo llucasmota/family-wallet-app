@@ -1438,6 +1438,7 @@ export default function FamilyPage() {
         familyId={family?.id}
         members={family?.members as any}
         onSuccess={loadFamily}
+        onOpenAgent={() => setIsAgentOpen(true)}
       />
 
       {/* Member Deletion / Inactivation Confirmation Modal */}

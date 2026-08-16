@@ -219,6 +219,7 @@ export default function CategoriesPage() {
         members={familyData?.members}
         categories={familyData?.categories}
         onSuccess={loadData}
+        onOpenAgent={() => setIsAgentOpen(true)}
       />
 
       <AgentModal
