@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { families, familyMembers, categories, expenses, expenseSplits, settlements, users } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql, or } from 'drizzle-orm';
 import { calculateNetSettlements } from '@/services/expense-calculator';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
@@ -12,6 +12,11 @@ export async function getFamilyDataAction() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Self-healing migration for is_active column
+    try {
+      await db.execute(sql`ALTER TABLE family_members ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL;`);
+    } catch {}
 
     // Ensure user row exists in public.users to prevent foreign key errors
     if (user) {
@@ -68,6 +73,7 @@ export async function getFamilyDataAction() {
         role: 'admin',
         avatarKey: 'husband',
         color: '#1E6B52',
+        isActive: true,
       });
 
       const [reloaded] = await db.query.families.findMany({
@@ -87,6 +93,7 @@ export async function getFamilyDataAction() {
         role: 'admin',
         avatarKey: 'husband',
         color: '#1E6B52',
+        isActive: true,
       });
 
       const [reloaded] = await db.query.families.findMany({
@@ -187,6 +194,7 @@ export async function addMemberAction(payload: {
         avatarKey: payload.avatarKey || 'husband',
         color: payload.color || '#1E6B52',
         role: payload.role || 'member',
+        isActive: true,
       })
       .returning();
 
@@ -200,17 +208,93 @@ export async function addMemberAction(payload: {
   }
 }
 
-export async function deleteMemberAction(memberId: string) {
+/**
+ * Smart delete: if member has 0 operations, performs permanent hard delete.
+ * If member has operations/history, performs soft delete (inactivation).
+ */
+export async function deleteOrInactivateMemberAction(memberId: string) {
   try {
-    await db.delete(familyMembers).where(eq(familyMembers.id, memberId));
+    const member = await db.query.familyMembers.findFirst({
+      where: eq(familyMembers.id, memberId),
+    });
+
+    if (!member) {
+      return { success: false, error: 'Membro não encontrado' };
+    }
+
+    // Check operations count
+    const [payerExpenses, splitsCount, settlementCount] = await Promise.all([
+      db.query.expenses.findMany({
+        where: eq(expenses.payerMemberId, memberId),
+        limit: 1,
+      }),
+      db.query.expenseSplits.findMany({
+        where: eq(expenseSplits.memberId, memberId),
+        limit: 1,
+      }),
+      db.query.settlements.findMany({
+        where: or(
+          eq(settlements.fromMemberId, memberId),
+          eq(settlements.toMemberId, memberId)
+        ),
+        limit: 1,
+      }),
+    ]);
+
+    const hasHistory = payerExpenses.length > 0 || splitsCount.length > 0 || settlementCount.length > 0;
+
+    if (!hasHistory) {
+      // 0 operations -> Clean Hard Delete
+      await db.delete(familyMembers).where(eq(familyMembers.id, memberId));
+      revalidatePath('/family');
+      revalidatePath('/');
+      revalidatePath('/expenses');
+      return {
+        success: true,
+        action: 'deleted',
+        message: 'Membro excluído definitivamente com sucesso!',
+      };
+    } else {
+      // Has history -> Soft Delete / Inactivation
+      await db
+        .update(familyMembers)
+        .set({ isActive: false })
+        .where(eq(familyMembers.id, memberId));
+
+      revalidatePath('/family');
+      revalidatePath('/');
+      revalidatePath('/expenses');
+      return {
+        success: true,
+        action: 'inactivated',
+        message: 'Membro inativado com sucesso! O histórico e os rateios passados foram preservados.',
+      };
+    }
+  } catch (error: any) {
+    console.error('Error in deleteOrInactivateMemberAction:', error);
+    return { success: false, error: error.message || 'Falha ao processar exclusão/inativação do membro' };
+  }
+}
+
+export async function reactivateMemberAction(memberId: string) {
+  try {
+    await db
+      .update(familyMembers)
+      .set({ isActive: true })
+      .where(eq(familyMembers.id, memberId));
+
     revalidatePath('/family');
     revalidatePath('/');
     revalidatePath('/expenses');
-    return { success: true };
+    return { success: true, message: 'Membro reativado com sucesso!' };
   } catch (error: any) {
-    console.error('Error deleting member:', error);
-    return { success: false, error: error.message || 'Falha ao excluir membro' };
+    console.error('Error reactivating member:', error);
+    return { success: false, error: error.message || 'Falha ao reativar membro' };
   }
+}
+
+export async function deleteMemberAction(memberId: string) {
+  return await deleteOrInactivateMemberAction(memberId);
 }
 
 export async function recordSettlementAction(payload: {

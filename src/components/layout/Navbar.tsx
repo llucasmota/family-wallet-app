@@ -7,6 +7,7 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { UserMenu } from './UserMenu';
+import { MobileBottomNav } from './MobileBottomNav';
 import { Wallet, LayoutDashboard, Receipt, Users, Sparkles, Plus, Globe, Tag } from 'lucide-react';
 
 export interface NavbarProps {
@@ -138,6 +139,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
           />
         </div>
       </div>
+
+      {/* Floating Mobile Bottom Navigation Dock */}
+      <MobileBottomNav onOpenQuickAdd={onOpenQuickAdd} />
     </header>
   );
 };

@@ -99,6 +99,8 @@ export async function signOutAction() {
   redirect('/auth');
 }
 
+import { and } from 'drizzle-orm';
+
 export async function joinFamilyAction(payload: {
   familyId: string;
   displayName: string;
@@ -109,13 +111,71 @@ export async function joinFamilyAction(payload: {
   const { data: { user } } = await supabase.auth.getUser();
 
   try {
+    const color = payload.avatarKey === 'wife' ? '#3D6473' : payload.avatarKey === 'child' ? '#FF9800' : '#1E6B52';
+
+    // 1. Check if this authenticated user already has a member profile in this family
+    if (user?.id) {
+      const existingUserMember = await db.query.familyMembers.findFirst({
+        where: and(
+          eq(familyMembers.familyId, payload.familyId),
+          eq(familyMembers.userId, user.id)
+        ),
+      });
+
+      if (existingUserMember) {
+        const [updated] = await db
+          .update(familyMembers)
+          .set({
+            displayName: payload.displayName.trim() || existingUserMember.displayName,
+            role: payload.role,
+            avatarKey: payload.avatarKey,
+            color,
+            isActive: true,
+          })
+          .where(eq(familyMembers.id, existingUserMember.id))
+          .returning();
+
+        revalidatePath('/family');
+        revalidatePath('/');
+        return { success: true, member: updated };
+      }
+    }
+
+    // 2. Check if an unlinked member exists with matching name in this family
+    const existingByName = await db.query.familyMembers.findFirst({
+      where: and(
+        eq(familyMembers.familyId, payload.familyId),
+        eq(familyMembers.displayName, payload.displayName.trim())
+      ),
+    });
+
+    if (existingByName) {
+      const [updated] = await db
+        .update(familyMembers)
+        .set({
+          userId: user?.id || existingByName.userId,
+          role: payload.role,
+          avatarKey: payload.avatarKey,
+          color,
+          isActive: true,
+        })
+        .where(eq(familyMembers.id, existingByName.id))
+        .returning();
+
+      revalidatePath('/family');
+      revalidatePath('/');
+      return { success: true, member: updated };
+    }
+
+    // 3. Otherwise, create a clean new member
     const [createdMember] = await db.insert(familyMembers).values({
       familyId: payload.familyId,
       userId: user?.id || null,
-      displayName: payload.displayName,
+      displayName: payload.displayName.trim(),
       role: payload.role,
       avatarKey: payload.avatarKey,
-      color: payload.avatarKey === 'wife' ? '#3D6473' : payload.avatarKey === 'child' ? '#FF9800' : '#1E6B52',
+      color,
+      isActive: true,
     }).returning();
 
     revalidatePath('/family');

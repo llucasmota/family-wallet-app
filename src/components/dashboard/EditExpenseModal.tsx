@@ -267,11 +267,13 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 onChange={(e) => setPayerMemberId(e.target.value)}
                 className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3.5 py-2 text-xs text-on-surface focus:border-primary focus:outline-none"
               >
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.displayName}
-                  </option>
-                ))}
+                {members
+                  .filter((m: any) => m.isActive !== false || m.id === expense?.payerMemberId)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
+                    </option>
+                  ))}
               </select>
             </div>
           )}

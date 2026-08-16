@@ -22,6 +22,10 @@ import {
   Sparkles,
   Home,
   AlertCircle,
+  Trash2,
+  RotateCcw,
+  AlertTriangle,
+  UserX,
 } from 'lucide-react';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
@@ -35,7 +39,8 @@ import {
   updateMemberProfileAction,
   updateFamilyCurrencyWithConversionAction,
   addMemberAction,
-  deleteMemberAction,
+  deleteOrInactivateMemberAction,
+  reactivateMemberAction,
 } from '@/app/actions/family';
 import { AVATAR_PRESETS, FAMILY_EMBLEMS, SKIN_TONES, getAdaptedEmoji } from '@/components/ui/AvatarPresets';
 
@@ -46,6 +51,8 @@ export default function FamilyPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [isMemberEditOpen, setIsMemberEditOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettling, setIsSettling] = useState(false);
@@ -289,6 +296,42 @@ export default function FamilyPage() {
     }
   };
 
+  const handleConfirmDeleteMember = async () => {
+    if (!memberToDelete) return;
+    setIsDeleting(true);
+
+    try {
+      const res = await deleteOrInactivateMemberAction(memberToDelete.id);
+      if (res.success) {
+        showToast(res.message || 'Operação realizada com sucesso!');
+        setMemberToDelete(null);
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao remover membro', 'error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || 'Erro inesperado ao remover membro', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleReactivateMember = async (memberId: string) => {
+    try {
+      const res = await reactivateMemberAction(memberId);
+      if (res.success) {
+        showToast('✨ Membro reativado com sucesso!');
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao reativar membro', 'error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || 'Erro inesperado ao reativar membro', 'error');
+    }
+  };
+
   const handleSettleDebt = async (debt: (typeof settlements)[0]) => {
     setIsSettling(true);
 
@@ -361,7 +404,7 @@ export default function FamilyPage() {
         onOpenQuickAdd={() => setIsQuickAddOpen(true)}
       />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 pb-28 sm:pb-8 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -483,10 +526,16 @@ export default function FamilyPage() {
         {/* Members List */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-on-surface flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Membros da Família ({family?.members.length || 0})
-            </h2>
-            <span className="text-xs text-on-surface-variant">Clique em Editar para personalizar avatar</span>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <h2 className="text-base font-semibold text-on-surface">
+                Membros Ativos da Família ({family?.members.filter((m: any) => m.isActive !== false).length || 0})
+              </h2>
+            </div>
+            <Button variant="outlined" size="sm" onClick={handleOpenAddMember} className="gap-1.5 text-xs h-8">
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar Membro
+            </Button>
           </div>
 
           {isLoading ? (
@@ -521,41 +570,123 @@ export default function FamilyPage() {
               </Button>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {family?.members.map((member) => (
-                <Card key={member.id} variant="elevated" className="flex items-center justify-between p-5">
-                  <div className="flex items-center gap-3.5">
-                    <Avatar
-                      name={member.displayName}
-                      role={member.role}
-                      avatarKey={member.avatarKey}
-                      color={member.color}
-                      size="lg"
-                    />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-on-surface">{member.displayName}</span>
-                        <Badge variant="paid">
-                          {member.role === 'admin' ? 'Administrador' : 'Membro'}
-                        </Badge>
+            <div className="flex flex-col gap-6">
+              {/* Active Members Grid */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {family.members
+                  .filter((m: any) => m.isActive !== false)
+                  .map((member) => (
+                    <Card key={member.id} variant="elevated" className="flex items-center justify-between p-5">
+                      <div className="flex items-center gap-3.5">
+                        <Avatar
+                          name={member.displayName}
+                          role={member.role}
+                          avatarKey={member.avatarKey}
+                          color={member.color}
+                          size="lg"
+                        />
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-on-surface">{member.displayName}</span>
+                            <Badge variant="paid">
+                              {member.role === 'admin' ? 'Administrador' : 'Membro'}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-on-surface-variant mt-0.5">
+                            Avatar: {AVATAR_PRESETS.find((p) => p.key === member.avatarKey.split(':')[0])?.name || 'Personalizado'}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs text-on-surface-variant mt-0.5">
-                        Avatar: {AVATAR_PRESETS.find((p) => p.key === member.avatarKey.split(':')[0])?.name || 'Personalizado'}
-                      </span>
-                    </div>
-                  </div>
 
-                  <Button
-                    variant="tonal"
-                    size="sm"
-                    onClick={() => handleOpenMemberEdit(member)}
-                    className="gap-1.5 text-xs h-8"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Editar
-                  </Button>
-                </Card>
-              ))}
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="tonal"
+                          size="sm"
+                          onClick={() => handleOpenMemberEdit(member)}
+                          className="gap-1.5 text-xs h-8"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar
+                        </Button>
+
+                        {family.members.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setMemberToDelete(member)}
+                            title="Excluir ou inativar membro"
+                            className="flex h-8 w-8 items-center justify-center rounded-m3-sm border border-outline-variant/30 text-on-surface-variant hover:text-error hover:border-error/40 hover:bg-error/10 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+
+              {/* Inactive Members Section */}
+              {family.members.some((m: any) => m.isActive === false) && (
+                <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant/20 dark:border-white/[0.06]">
+                  <div className="flex items-center gap-2 text-on-surface-variant">
+                    <UserX className="h-4 w-4" />
+                    <h3 className="text-sm font-semibold">Membros Inativos / Antigos Participantes</h3>
+                  </div>
+                  <p className="text-xs text-on-surface-variant">
+                    Membros inativados mantêm o histórico financeiro antigo preservado, mas não entram em novos rateios.
+                  </p>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 opacity-85">
+                    {family.members
+                      .filter((m: any) => m.isActive === false)
+                      .map((member) => (
+                        <Card
+                          key={member.id}
+                          variant="outlined"
+                          className="flex items-center justify-between p-4 bg-surface-container/40 dark:bg-white/[0.02] border-dashed"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar
+                              name={member.displayName}
+                              role={member.role}
+                              avatarKey={member.avatarKey}
+                              color={member.color}
+                              size="md"
+                            />
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-on-surface line-through text-xs">{member.displayName}</span>
+                                <span className="rounded bg-black/10 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-500">
+                                  Inativo
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                variant="outlined"
+                                size="sm"
+                                onClick={() => handleReactivateMember(member.id)}
+                                className="gap-1 text-xs h-7 text-primary"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                Reativar
+                              </Button>
+
+                              <button
+                                type="button"
+                                onClick={() => setMemberToDelete(member)}
+                                title="Excluir membro definitivamente"
+                                className="flex h-7 w-7 items-center justify-center rounded-m3-sm border border-outline-variant/30 text-on-surface-variant hover:text-error hover:border-error/40 hover:bg-error/10 transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                        </Card>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1076,6 +1207,74 @@ export default function FamilyPage() {
         members={family?.members as any}
         onSuccess={loadFamily}
       />
+
+      {/* Member Deletion / Inactivation Confirmation Modal */}
+      {memberToDelete && (
+        <div
+          onClick={() => setMemberToDelete(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <Card
+            variant="elevated"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md shadow-m3-3 flex flex-col gap-4 p-5"
+          >
+            <div className="flex items-center gap-3 text-error">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-on-surface">Remover ou Inativar Membro</h3>
+                <p className="text-xs text-on-surface-variant">{memberToDelete.displayName}</p>
+              </div>
+            </div>
+
+            <div className="text-xs text-on-surface-variant flex flex-col gap-2 rounded-m3-md bg-surface-container p-3">
+              <p>
+                <strong>Como funciona:</strong>
+              </p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>
+                  Se <strong>{memberToDelete.displayName}</strong> não possuir despesas vinculadas (como cadastros duplicados), será <strong>excluído definitivamente</strong>.
+                </li>
+                <li>
+                  Se possuir histórico financeiro ou rateios passados, será <strong>inativado</strong> de forma segura para não afetar o saldo histórico do casal.
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20 dark:border-white/[0.06]">
+              <Button
+                variant="text"
+                size="sm"
+                onClick={() => setMemberToDelete(null)}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="filled"
+                size="md"
+                onClick={handleConfirmDeleteMember}
+                disabled={isDeleting}
+                className="bg-error hover:bg-error/90 text-white"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Confirmar Remoção
+                  </>
+                )}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Toast Notification */}
       <Toast

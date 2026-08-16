@@ -34,6 +34,7 @@ export const familyMembers = pgTable('family_members', {
   role: memberRoleEnum('role').default('member').notNull(),
   avatarKey: text('avatar_key').default('husband').notNull(), // 'husband' | 'wife' | 'child' | 'custom'
   color: text('color').default('#2E7D5E').notNull(), // Material 3 mint / theme color
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

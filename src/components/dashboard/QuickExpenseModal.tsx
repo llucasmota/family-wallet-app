@@ -66,7 +66,7 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
 
   const activeMembers =
     liveMembers && liveMembers.length > 0
-      ? liveMembers
+      ? liveMembers.filter((m: any) => m.isActive !== false)
       : [
           { id: '1', displayName: 'Administrador', role: 'admin' },
         ];
