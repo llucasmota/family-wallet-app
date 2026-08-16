@@ -4,6 +4,9 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import '@/styles/globals.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Family Wallet — Gestão Financeira Familiar Inteligente',
   description: 'Controle de gastos compartilhados, parcelamentos, previsões e assistente IA para a sua família.',
