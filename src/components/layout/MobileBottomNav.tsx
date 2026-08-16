@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { LayoutDashboard, Receipt, Plus, Users, Tag } from 'lucide-react';
 
 export interface MobileBottomNavProps {
@@ -11,6 +12,7 @@ export interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenQuickAdd }) => {
   const pathname = usePathname();
+  const tNav = useTranslations('Navigation');
 
   const isHome = pathname === '/' || pathname === '/en';
   const isExpenses = pathname.includes('/expenses');
@@ -35,7 +37,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenQuickAdd
           <div className={`flex items-center justify-center p-1 rounded-lg ${isHome ? 'bg-primary/10' : ''}`}>
             <LayoutDashboard className="h-5 w-5" />
           </div>
-          <span className="text-[10px] tracking-tight">Início</span>
+          <span className="text-[10px] tracking-tight">{tNav('overview')}</span>
         </Link>
 
         {/* 2. Despesas */}
@@ -50,20 +52,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenQuickAdd
           <div className={`flex items-center justify-center p-1 rounded-lg ${isExpenses ? 'bg-primary/10' : ''}`}>
             <Receipt className="h-5 w-5" />
           </div>
-          <span className="text-[10px] tracking-tight">Despesas</span>
+          <span className="text-[10px] tracking-tight">{tNav('expenses')}</span>
         </Link>
 
         {/* 3. Central Floating Action Button (Novo Lançamento) */}
         <button
           type="button"
           onClick={onOpenQuickAdd}
-          aria-label="Adicionar Nova Despesa"
-          className="flex flex-col items-center justify-center -mt-5 transition-transform active:scale-90"
+          aria-label={tNav('newExpense')}
+          className="flex flex-col items-center justify-center -mt-5 transition-transform active:scale-95 group focus:outline-none"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 border-2 border-surface dark:border-[#121614] hover:bg-primary/90 transition-colors">
-            <Plus className="h-6 w-6 stroke-[2.5]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-surface dark:ring-[#141816] group-hover:scale-105 transition-all">
+            <Plus className="h-6 w-6" />
           </div>
-          <span className="text-[10px] font-bold text-primary mt-0.5">Novo</span>
+          <span className="text-[9px] font-bold text-primary mt-0.5">{tNav('newExpense')}</span>
         </button>
 
         {/* 4. Família */}
@@ -78,7 +80,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenQuickAdd
           <div className={`flex items-center justify-center p-1 rounded-lg ${isFamily ? 'bg-primary/10' : ''}`}>
             <Users className="h-5 w-5" />
           </div>
-          <span className="text-[10px] tracking-tight">Família</span>
+          <span className="text-[10px] tracking-tight">{tNav('family')}</span>
         </Link>
 
         {/* 5. Categorias */}
@@ -93,7 +95,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenQuickAdd
           <div className={`flex items-center justify-center p-1 rounded-lg ${isCategories ? 'bg-primary/10' : ''}`}>
             <Tag className="h-5 w-5" />
           </div>
-          <span className="text-[10px] tracking-tight">Categorias</span>
+          <span className="text-[10px] tracking-tight">{tNav('categories')}</span>
         </Link>
       </div>
     </nav>

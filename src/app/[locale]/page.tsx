@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Navbar } from '@/components/layout/Navbar';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { SpendingChart, CategorySpending } from '@/components/dashboard/SpendingChart';
@@ -22,6 +23,8 @@ import { getDashboardDataAction, addExpenseAction, toggleExpenseStatusAction } f
 import { getFamilyDataAction } from '@/app/actions/family';
 
 export default function DashboardPage() {
+  const tDash = useTranslations('Dashboard');
+  const tNav = useTranslations('Navigation');
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -167,7 +170,7 @@ export default function DashboardPage() {
               </h1>
             )}
             <p className="text-xs sm:text-sm text-on-surface-variant">
-              Visão consolidada de gastos compartilhados e projeções futuras
+              {tDash('subtitle')}
             </p>
           </div>
 
@@ -186,7 +189,7 @@ export default function DashboardPage() {
               className="gap-1.5 text-xs h-9"
             >
               <FileText className="h-4 w-4 text-primary" />
-              Relatório (PDF)
+              {tNav('reportPdf')}
             </Button>
             <Button
               variant="filled"
@@ -195,7 +198,7 @@ export default function DashboardPage() {
               className="gap-1.5 text-xs h-9"
             >
               <Plus className="h-4 w-4" />
-              Novo Lançamento
+              {tNav('newExpense')}
             </Button>
           </div>
         </div>
@@ -217,39 +220,39 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             <MetricCard
-              title="Gasto do Mês"
+              title={tDash('totalSpent')}
               value={metrics.totalCurrentMonth}
-              subtitle="Mês Atual"
+              subtitle={tDash('currentMonth')}
               icon={<DollarSign className="h-5 w-5" />}
             />
             <MetricCard
-              title="Ainda a Vencer"
+              title={tDash('totalPending')}
               value={metrics.totalPending}
-              subtitle="Despesas pendentes"
+              subtitle={tDash('totalPendingSubtitle')}
               icon={<Clock className="h-5 w-5" />}
             />
             <MetricCard
-              title="Previsão Próximo Mês"
+              title={tDash('nextMonthForecast')}
               value={metrics.totalNextMonthCommitted}
-              subtitle="Parcelas + Recorrências fixas"
+              subtitle={tDash('nextMonthSubtitle')}
               icon={<CalendarDays className="h-5 w-5" />}
             />
             <MetricCard
-              title="Tendência de Gastos"
+              title={tDash('trendTitle')}
               value={
                 metrics.trend.percentageChange !== 0
                   ? `${metrics.trend.percentageChange > 0 ? '+' : ''}${metrics.trend.percentageChange}%`
-                  : 'Estável'
+                  : tDash('trendStable')
               }
               trend={metrics.trend.trend}
               trendLabel={
                 metrics.trend.trend === 'down'
-                  ? 'Abaixo da média dos últimos meses'
+                  ? tDash('trendDown')
                   : metrics.trend.trend === 'up'
-                  ? 'Acima da média dos últimos meses'
-                  : 'Dentro da média'
+                  ? tDash('trendUp')
+                  : tDash('trendStable')
               }
-              subtitle="Comparado aos meses anteriores"
+              subtitle={tDash('trendSubtitle')}
               icon={<TrendingUp className="h-5 w-5" />}
             />
           </div>

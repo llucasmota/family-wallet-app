@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { UserMenu } from './UserMenu';
 import { MobileBottomNav } from './MobileBottomNav';
-import { Wallet, LayoutDashboard, Receipt, Users, Sparkles, Plus, Globe, Tag } from 'lucide-react';
+import { LanguageSwitcher } from '../ui/LanguageSwitcher';
+import { Wallet, LayoutDashboard, Receipt, Users, Sparkles, Plus, Tag } from 'lucide-react';
 
 export interface NavbarProps {
   onOpenAgent: () => void;
@@ -17,7 +19,7 @@ export interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) => {
   const pathname = usePathname();
-  const router = useRouter();
+  const tNav = useTranslations('Navigation');
 
   const [currentMember, setCurrentMember] = useState<{
     displayName: string;
@@ -33,7 +35,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
         const res = await getFamilyDataAction();
         if (res.success && res.family?.members && res.family.members.length > 0) {
           const matched =
-            res.currentMember ||
             res.family.members.find((m: any) => m.userId === res.currentUserId) ||
             res.family.members[0];
 
@@ -48,23 +49,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
     loadProfile();
   }, [pathname]);
 
-  // Detect current locale
-  const isPt = !pathname.startsWith('/en');
-
   const navLinks = [
-    { href: '/', label: 'Visão Geral', icon: <LayoutDashboard className="h-4 w-4" /> },
-    { href: '/expenses', label: 'Despesas', icon: <Receipt className="h-4 w-4" /> },
-    { href: '/family', label: 'Família', icon: <Users className="h-4 w-4" /> },
-    { href: '/categories', label: 'Categorias', icon: <Tag className="h-4 w-4" /> },
+    { href: '/', label: tNav('overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
+    { href: '/expenses', label: tNav('expenses'), icon: <Receipt className="h-4 w-4" /> },
+    { href: '/family', label: tNav('family'), icon: <Users className="h-4 w-4" /> },
+    { href: '/categories', label: tNav('categories'), icon: <Tag className="h-4 w-4" /> },
   ];
-
-  const handleToggleLocale = () => {
-    if (isPt) {
-      router.push('/en' + (pathname === '/' ? '' : pathname));
-    } else {
-      router.push(pathname.replace(/^\/en/, '') || '/');
-    }
-  };
 
   return (
     <>
@@ -102,26 +92,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
           </div>
 
           {/* Action Controls */}
-          <div className="flex items-center gap-2.5">
-            {/* Language Toggle */}
-            <button
-              onClick={handleToggleLocale}
-              title="Alternar Idioma (PT / EN)"
-              className="flex items-center gap-1 rounded-m3-md border border-outline-variant/30 bg-surface dark:bg-[#141816] px-2 py-1 text-[11px] font-bold text-on-surface-variant hover:text-primary transition-colors"
-            >
-              <Globe className="h-3.5 w-3.5 text-primary" />
-              <span>{isPt ? 'PT' : 'EN'}</span>
-            </button>
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Language Switcher Pill */}
+            <LanguageSwitcher variant="pill" />
 
             {/* Agent Mode Trigger */}
             <Button
               variant="tonal"
               size="sm"
               onClick={onOpenAgent}
-              className="gap-1.5 text-xs font-semibold bg-primary-container/70 border border-primary/20"
+              className="gap-1.5 text-xs font-semibold bg-primary-container/70 border border-primary/20 hidden sm:inline-flex"
             >
               <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">Modo Agente</span>
+              <span>{tNav('agentMode')}</span>
             </Button>
 
             {/* Quick Add Expense */}
@@ -132,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
               className="gap-1 text-xs"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Novo Gasto</span>
+              <span className="hidden sm:inline">{tNav('newExpense')}</span>
             </Button>
 
             <ThemeToggle />

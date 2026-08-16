@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { LogOut, User, Shield, Heart, Baby, ChevronDown } from 'lucide-react';
+import { LanguageSwitcher } from '../ui/LanguageSwitcher';
+import { useTranslations } from 'next-intl';
 import { signOutAction } from '@/app/actions/auth';
 
 export interface UserMenuProps {
@@ -21,6 +23,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const tCommon = useTranslations('Common');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -61,25 +64,30 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-m3-lg border border-outline-variant/30 bg-surface dark:bg-[#1A1F1D] p-2 shadow-m3-3 z-50 animate-in fade-in duration-150">
+        <div className="absolute right-0 mt-2 w-60 rounded-m3-lg border border-outline-variant/30 bg-surface dark:bg-[#1A1F1D] p-2 shadow-m3-3 z-50 animate-in fade-in duration-150 flex flex-col gap-1.5">
           {/* User Info Header */}
           <div className="border-b border-outline-variant/20 dark:border-white/[0.06] p-2.5 flex flex-col gap-0.5">
             <span className="text-xs font-bold text-on-surface">{displayName}</span>
             {email && <span className="text-[11px] text-on-surface-variant truncate">{email}</span>}
             <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-primary">
               <Shield className="h-3 w-3" />
-              <span>{role === 'admin' ? 'Administrador Familiar' : 'Membro'}</span>
+              <span>{role === 'admin' ? tCommon('adminBadge') : tCommon('memberBadge')}</span>
             </div>
           </div>
 
+          {/* Language Selector Inside Menu */}
+          <div className="border-b border-outline-variant/20 dark:border-white/[0.06] py-1.5">
+            <LanguageSwitcher variant="menu" />
+          </div>
+
           {/* Actions */}
-          <div className="py-1">
+          <div className="pt-1">
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-2 rounded-m3-md px-2.5 py-2 text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-              <span>Sair da Conta</span>
+              <span>{tCommon('signOut')}</span>
             </button>
           </div>
         </div>
