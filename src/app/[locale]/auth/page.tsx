@@ -24,6 +24,23 @@ export default function AuthPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
+    const formatAuthError = (errStr?: string) => {
+      if (!errStr) return 'Ocorreu um erro ao processar';
+      if (errStr.includes('Error sending confirmation email')) {
+        return 'Limite de envio de e-mails do Supabase atingido. Dica: desative "Confirm email" no painel do Supabase (Auth > Providers > Email) para permitir cadastros imediatos.';
+      }
+      if (errStr.includes('User already registered')) {
+        return 'Este e-mail já possui cadastro. Clique na aba "Entrar" acima.';
+      }
+      if (errStr.includes('Invalid login credentials')) {
+        return 'E-mail ou senha incorretos.';
+      }
+      if (errStr.includes('Password should be at least 6 characters')) {
+        return 'A senha deve conter no mínimo 6 caracteres.';
+      }
+      return errStr;
+    };
+
     try {
       if (authMode === 'signup') {
         const res = await signUpAction({ email, password, name });
@@ -35,25 +52,25 @@ export default function AuthPage() {
             router.push('/');
           }
         } else {
-          setErrorMessage(res.error || 'Erro ao criar conta');
+          setErrorMessage(formatAuthError(res.error));
         }
       } else if (authMode === 'login') {
         const res = await signInAction({ email, password });
         if (res.success) {
           router.push('/');
         } else {
-          setErrorMessage(res.error || 'Email ou senha inválidos');
+          setErrorMessage(formatAuthError(res.error));
         }
       } else if (authMode === 'forgot_password') {
         const res = await resetPasswordAction(email);
         if (res.success) {
           setIsResetLinkSent(true);
         } else {
-          setErrorMessage(res.error || 'Não foi possível enviar o link de recuperação');
+          setErrorMessage(formatAuthError(res.error));
         }
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Ocorreu um erro ao processar');
+      setErrorMessage(formatAuthError(err?.message));
     } finally {
       setIsLoading(false);
     }

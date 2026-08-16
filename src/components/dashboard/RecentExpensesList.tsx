@@ -24,9 +24,15 @@ export interface RecentExpenseItem {
 
 export interface RecentExpensesListProps {
   expenses: RecentExpenseItem[];
+  onToggleStatus?: (expenseId: string, currentStatus: 'paid' | 'pending') => void;
+  onEditExpense?: (expense: RecentExpenseItem) => void;
 }
 
-export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({ expenses }) => {
+export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({
+  expenses,
+  onToggleStatus,
+  onEditExpense,
+}) => {
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
@@ -131,9 +137,21 @@ export const RecentExpensesList: React.FC<RecentExpensesListProps> = ({ expenses
                         <AlertCircle className="h-2.5 w-2.5" /> Vence em {daysUntilDue === 0 ? 'Hoje' : `${daysUntilDue}d`}
                       </span>
                     )}
-                    <Badge variant={expense.status === 'paid' ? 'paid' : 'pending'}>
-                      {expense.status === 'paid' ? 'Pago' : 'A Vencer'}
-                    </Badge>
+                    {onToggleStatus ? (
+                      <button
+                        onClick={() => onToggleStatus(expense.id, expense.status)}
+                        title="Clique para alternar entre Pago e A Vencer"
+                        className="focus:outline-none transition-transform active:scale-95"
+                      >
+                        <Badge variant={expense.status === 'paid' ? 'paid' : 'pending'}>
+                          {expense.status === 'paid' ? '✓ Pago' : 'A Vencer'}
+                        </Badge>
+                      </button>
+                    ) : (
+                      <Badge variant={expense.status === 'paid' ? 'paid' : 'pending'}>
+                        {expense.status === 'paid' ? '✓ Pago' : 'A Vencer'}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

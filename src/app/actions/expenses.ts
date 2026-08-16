@@ -127,6 +127,44 @@ export async function toggleExpenseStatusAction(expenseId: string, currentStatus
   }
 }
 
+export async function updateExpenseAction(payload: {
+  expenseId: string;
+  description: string;
+  amount: number;
+  dueDate: string;
+  categoryId?: string;
+  payerMemberId?: string;
+  status: 'paid' | 'pending';
+}) {
+  try {
+    const paymentDate = payload.status === 'paid' ? new Date().toISOString().split('T')[0] : null;
+
+    const [updated] = await db
+      .update(expenses)
+      .set({
+        description: payload.description.trim(),
+        amount: payload.amount.toFixed(2),
+        dueDate: payload.dueDate,
+        ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
+        ...(payload.payerMemberId ? { payerMemberId: payload.payerMemberId } : {}),
+        status: payload.status,
+        paymentDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(expenses.id, payload.expenseId))
+      .returning();
+
+    revalidatePath('/');
+    revalidatePath('/expenses');
+    revalidatePath('/family');
+
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error('Error updating expense:', error);
+    return { success: false, error: error.message || 'Falha ao atualizar despesa' };
+  }
+}
+
 export async function deleteExpenseAction(expenseId: string) {
   try {
     // Delete associated splits first then the expense

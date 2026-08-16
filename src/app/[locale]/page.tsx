@@ -14,7 +14,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { DollarSign, Clock, CalendarDays, TrendingUp, Plus, Sparkles, Receipt } from 'lucide-react';
 import { ExtractedExpenseDraft } from '@/services/ai/types';
-import { getDashboardDataAction, addExpenseAction } from '@/app/actions/expenses';
+import { getDashboardDataAction, addExpenseAction, toggleExpenseStatusAction } from '@/app/actions/expenses';
 import { getFamilyDataAction } from '@/app/actions/family';
 
 export default function DashboardPage() {
@@ -266,7 +266,13 @@ export default function DashboardPage() {
                 />
               </div>
               <div className="lg:col-span-5">
-                <RecentExpensesList expenses={expenses} />
+                <RecentExpensesList
+                  expenses={expenses}
+                  onToggleStatus={async (id, currentStatus) => {
+                    await toggleExpenseStatusAction(id, currentStatus);
+                    await loadData(selectedDate);
+                  }}
+                />
               </div>
             </div>
 

@@ -6,8 +6,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import { Search, Filter, Plus, Layers, Repeat, Trash2, CheckCircle2, Circle, Download } from 'lucide-react';
+import { Search, Filter, Plus, Layers, Repeat, Trash2, CheckCircle2, Circle, Download, Pencil } from 'lucide-react';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
+import { EditExpenseModal } from '@/components/dashboard/EditExpenseModal';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { MonthPicker } from '@/components/ui/MonthPicker';
 import { getFamilyDataAction } from '@/app/actions/family';
@@ -18,11 +19,13 @@ export default function ExpensesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [familyData, setFamilyData] = useState<{
     id: string;
+    currency?: string;
     members: any[];
     categories: any[];
   } | null>(null);
@@ -295,13 +298,22 @@ export default function ExpensesPage() {
                         </button>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleDeleteExpense(item.id)}
-                          title="Excluir lançamento"
-                          className="text-on-surface-variant hover:text-error transition-colors p-1 rounded hover:bg-surface-container"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setEditingExpense(item)}
+                            title="Editar despesa / status"
+                            className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExpense(item.id)}
+                            title="Excluir lançamento"
+                            className="text-on-surface-variant hover:text-error transition-colors p-1.5 rounded hover:bg-surface-container"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -318,6 +330,16 @@ export default function ExpensesPage() {
         familyId={familyData?.id}
         members={familyData?.members}
         categories={familyData?.categories}
+        onSuccess={loadExpenses}
+      />
+
+      <EditExpenseModal
+        isOpen={!!editingExpense}
+        onClose={() => setEditingExpense(null)}
+        expense={editingExpense}
+        members={familyData?.members}
+        categories={familyData?.categories}
+        currency={familyData?.currency || 'BRL'}
         onSuccess={loadExpenses}
       />
 
