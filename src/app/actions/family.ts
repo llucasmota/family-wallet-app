@@ -161,9 +161,16 @@ export async function getFamilyDataAction() {
       };
     });
 
+    const currentMember = user?.id
+      ? family.members.find((m) => m.userId === user.id) || null
+      : null;
+
     return {
       success: true,
       family,
+      currentUserId: user?.id || null,
+      currentUserEmail: user?.email || null,
+      currentMember,
       settlements: formattedDebts,
     };
   } catch (error: any) {

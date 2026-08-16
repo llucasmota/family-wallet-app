@@ -221,6 +221,167 @@ export async function signOutAction() {
   redirect('/auth');
 }
 
+export async function signUpAndJoinFamilyAction(payload: {
+  familyId: string;
+  email: string;
+  password: string;
+  displayName: string;
+  avatarKey: string;
+  role?: 'member' | 'child';
+}) {
+  await ensureBetaTable();
+  const supabase = await createClient();
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const assignedRole = payload.role || 'member';
+  const color = payload.avatarKey === 'wife' ? '#3D6473' : payload.avatarKey === 'child' ? '#FF9800' : '#1E6B52';
+
+  // 1. Pre-approve in beta access requests since they are joining via a valid family invite link
+  try {
+    const existingReq = await db.query.betaAccessRequests.findFirst({
+      where: eq(betaAccessRequests.email, normalizedEmail),
+    });
+    if (!existingReq) {
+      await db.insert(betaAccessRequests).values({
+        email: normalizedEmail,
+        name: payload.displayName.trim() || 'Membro Convidado',
+        status: 'approved',
+        approvedAt: new Date(),
+      });
+    } else if (existingReq.status !== 'approved') {
+      await db
+        .update(betaAccessRequests)
+        .set({
+          status: 'approved',
+          approvedAt: new Date(),
+        })
+        .where(eq(betaAccessRequests.id, existingReq.id));
+    }
+  } catch (e) {
+    console.error('Error pre-approving invited member in beta:', e);
+  }
+
+  // 2. Sign up user in Supabase Auth
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password: payload.password,
+    options: {
+      data: {
+        display_name: payload.displayName.trim(),
+      },
+      emailRedirectTo: `${appUrl}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    // If user is already registered in Auth, attempt login with the provided credentials
+    if (error.message.includes('User already registered')) {
+      const signInRes = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: payload.password,
+      });
+
+      if (signInRes.error) {
+        return {
+          success: false,
+          error: 'Este e-mail já possui cadastro. A senha informada está incorreta.',
+        };
+      }
+
+      // User logged in successfully, link them to the family
+      if (signInRes.data.user) {
+        return await linkUserToFamily({
+          userId: signInRes.data.user.id,
+          familyId: payload.familyId,
+          displayName: payload.displayName,
+          avatarKey: payload.avatarKey,
+          color,
+          role: assignedRole,
+        });
+      }
+    }
+
+    return { success: false, error: error.message };
+  }
+
+  if (data.user) {
+    // Ensure public.users record exists
+    try {
+      await db
+        .insert(users)
+        .values({
+          id: data.user.id,
+          email: normalizedEmail,
+          name: payload.displayName.trim(),
+        })
+        .onConflictDoNothing();
+    } catch (e) {}
+
+    // Link user as a member of the family
+    return await linkUserToFamily({
+      userId: data.user.id,
+      familyId: payload.familyId,
+      displayName: payload.displayName,
+      avatarKey: payload.avatarKey,
+      color,
+      role: assignedRole,
+    });
+  }
+
+  return { success: true };
+}
+
+async function linkUserToFamily(params: {
+  userId: string;
+  familyId: string;
+  displayName: string;
+  avatarKey: string;
+  color: string;
+  role: 'member' | 'child';
+}) {
+  // Check if member exists for this user in this family
+  const existingMember = await db.query.familyMembers.findFirst({
+    where: and(
+      eq(familyMembers.familyId, params.familyId),
+      eq(familyMembers.userId, params.userId)
+    ),
+  });
+
+  if (existingMember) {
+    const [updated] = await db
+      .update(familyMembers)
+      .set({
+        displayName: params.displayName.trim(),
+        avatarKey: params.avatarKey,
+        color: params.color,
+        role: params.role,
+        isActive: true,
+      })
+      .where(eq(familyMembers.id, existingMember.id))
+      .returning();
+
+    revalidatePath('/', 'layout');
+    return { success: true, member: updated };
+  }
+
+  // Create new member with role 'member'
+  const [created] = await db
+    .insert(familyMembers)
+    .values({
+      familyId: params.familyId,
+      userId: params.userId,
+      displayName: params.displayName.trim(),
+      avatarKey: params.avatarKey,
+      color: params.color,
+      role: params.role,
+      isActive: true,
+    })
+    .returning();
+
+  revalidatePath('/', 'layout');
+  return { success: true, member: created };
+}
+
 export async function joinFamilyAction(payload: {
   familyId: string;
   displayName: string;

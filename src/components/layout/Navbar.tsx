@@ -32,11 +32,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
         const { getFamilyDataAction } = await import('@/app/actions/family');
         const res = await getFamilyDataAction();
         if (res.success && res.family?.members && res.family.members.length > 0) {
-          const first = res.family.members[0];
+          const matched =
+            res.currentMember ||
+            res.family.members.find((m: any) => m.userId === res.currentUserId) ||
+            res.family.members[0];
+
           setCurrentMember({
-            displayName: first.displayName,
-            role: first.role as any,
-            avatarKey: first.avatarKey,
+            displayName: matched.displayName,
+            role: matched.role as any,
+            avatarKey: matched.avatarKey,
           });
         }
       } catch {}
