@@ -33,24 +33,16 @@ export async function POST(req: NextRequest) {
 
     const agentService = new AgentService();
 
-    if (type === 'text' && text) {
-      const draft = await agentService.processTextInput(text, familyContext);
-      return NextResponse.json(draft);
-    }
-
-    if (type === 'image' && imageBase64) {
-      const draft = await agentService.processReceiptImage(
-        imageBase64,
-        mimeType || 'image/jpeg',
-        familyContext
-      );
-      return NextResponse.json(draft);
-    }
-
-    if (type === 'audio' && audioBase64) {
-      const draft = await agentService.processAudioNote(
-        audioBase64,
-        mimeType || 'audio/mp3',
+    // Unified multimodal processing: Image + Text instructions + Audio
+    if (imageBase64 || audioBase64 || text) {
+      const draft = await agentService.processMultimodal(
+        {
+          text,
+          imageBase64,
+          mimeType,
+          audioBase64,
+          audioMimeType: mimeType,
+        },
         familyContext
       );
       return NextResponse.json(draft);

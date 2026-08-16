@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import { ExtractedExpenseDraft, FamilyContext, ILLMProvider } from './types';
+import { ExtractedExpenseDraft, FamilyContext, ILLMProvider, MultimodalInput } from './types';
 import { extractWithSmartNLP } from './smart-nlp-fallback';
 
 export class GeminiProvider implements ILLMProvider {
@@ -158,6 +158,86 @@ Sua missão é extrair com precisão cirúrgica os dados de despesas a partir do
         dueDate: context.currentDate,
         isInstallment: false,
         confidence: 0.8,
+      };
+    }
+  }
+
+  async extractMultimodal(
+    input: MultimodalInput,
+    context: FamilyContext
+  ): Promise<ExtractedExpenseDraft> {
+    const { text, imageBase64, mimeType, audioBase64, audioMimeType } = input;
+
+    try {
+      const model = this.getModel(context);
+      if (!model) {
+        // Fallback: If text exists, extract with SmartNLP; otherwise return structured draft
+        if (text && text.trim()) {
+          return extractWithSmartNLP(text, context);
+        }
+        return {
+          description: 'Comprovante / Recibo',
+          amount: 0,
+          dueDate: context.currentDate,
+          isInstallment: false,
+          confidence: 0.7,
+          notes: 'Configure a GEMINI_API_KEY no servidor para leitura OCR automática.',
+        };
+      }
+
+      const contents: any[] = [];
+
+      // Instruction prompt
+      let promptText = `Você está analisando um lançamento financeiro familiar.`;
+      if (text && text.trim()) {
+        promptText += `\nInstruções adicionais fornecidas pelo usuário: "${text.trim()}". (Dê prioridade máxima às instruções do usuário para divisão, categoria e descrição).`;
+      }
+      promptText += `\nIdentifique o valor total principal da transação (ex: Total a Pagar, Valor Líquido, Valor do PIX), a data de vencimento/pagamento, a melhor categoria e a divisão informada.`;
+
+      contents.push({ text: promptText });
+
+      if (imageBase64) {
+        contents.push({
+          inlineData: {
+            data: imageBase64,
+            mimeType: mimeType || 'image/jpeg',
+          },
+        });
+      }
+
+      if (audioBase64) {
+        contents.push({
+          inlineData: {
+            data: audioBase64,
+            mimeType: audioMimeType || 'audio/mp3',
+          },
+        });
+      }
+
+      const result = await model.generateContent(contents);
+      const responseText = result.response.text();
+      const parsed = JSON.parse(responseText || '{}');
+
+      if (parsed && typeof parsed.amount === 'number' && parsed.amount > 0) {
+        return parsed as ExtractedExpenseDraft;
+      }
+
+      if (text && text.trim()) {
+        return extractWithSmartNLP(text, context);
+      }
+
+      return parsed as ExtractedExpenseDraft;
+    } catch (err) {
+      console.warn('Gemini multimodal extraction error:', err);
+      if (text && text.trim()) {
+        return extractWithSmartNLP(text, context);
+      }
+      return {
+        description: 'Lançamento com Imagem',
+        amount: 0,
+        dueDate: context.currentDate,
+        isInstallment: false,
+        confidence: 0.6,
       };
     }
   }

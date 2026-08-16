@@ -1,5 +1,5 @@
 import { GeminiProvider } from './gemini-provider';
-import { ExtractedExpenseDraft, FamilyContext, ILLMProvider } from './types';
+import { ExtractedExpenseDraft, FamilyContext, ILLMProvider, MultimodalInput } from './types';
 
 export class AgentService {
   private provider: ILLMProvider;
@@ -27,5 +27,12 @@ export class AgentService {
     context: FamilyContext
   ): Promise<ExtractedExpenseDraft> {
     return this.provider.extractFromAudio(audioBase64, mimeType, context);
+  }
+
+  async processMultimodal(
+    input: MultimodalInput,
+    context: FamilyContext
+  ): Promise<ExtractedExpenseDraft> {
+    return this.provider.extractMultimodal(input, context);
   }
 }

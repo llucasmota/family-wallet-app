@@ -5,7 +5,20 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import { Search, Filter, Plus, Layers, Repeat, Trash2, CheckCircle2, Circle, Download, Pencil, FileText, CreditCard } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Plus,
+  Layers,
+  Repeat,
+  Trash2,
+  CheckCircle2,
+  Circle,
+  Download,
+  Pencil,
+  FileText,
+  CreditCard,
+} from 'lucide-react';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { EditExpenseModal } from '@/components/dashboard/EditExpenseModal';
 import { MonthlyReportModal } from '@/components/dashboard/MonthlyReportModal';
@@ -13,8 +26,9 @@ import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { MonthPicker } from '@/components/ui/MonthPicker';
 import { getFamilyDataAction } from '@/app/actions/family';
-import { getDashboardDataAction, toggleExpenseStatusAction, deleteExpenseAction } from '@/app/actions/expenses';
+import { getDashboardDataAction, toggleExpenseStatusAction, deleteExpenseAction, addExpenseAction } from '@/app/actions/expenses';
 import { extractPaymentMethod } from '@/services/payment-methods';
+import { ExtractedExpenseDraft } from '@/services/ai/types';
 
 export default function ExpensesPage() {
   const tExp = useTranslations('Expenses');
@@ -118,8 +132,30 @@ export default function ExpensesPage() {
     document.body.removeChild(link);
   };
 
+  const handleConfirmAgentDraft = async (draft: ExtractedExpenseDraft) => {
+    if (!familyData) return;
+
+    await addExpenseAction({
+      familyId: familyData.id,
+      payerMemberId: familyData.members[0]?.id || '',
+      categoryId: draft.categoryId || familyData.categories[0]?.id || '',
+      description: draft.description,
+      amount: draft.amount,
+      dueDate: draft.dueDate,
+      expenseType: draft.isInstallment ? 'installment' : 'single',
+      installmentsCount: draft.totalInstallments || 1,
+      status: 'paid',
+      splits: familyData.members.map((m: any) => ({
+        memberId: m.id,
+        percentage: 100 / familyData.members.length,
+      })),
+    });
+
+    loadExpenses();
+  };
+
   const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: familyData?.currency || 'BRL' }).format(val);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface transition-colors duration-200">
@@ -496,7 +532,7 @@ export default function ExpensesPage() {
       <AgentModal
         isOpen={isAgentOpen}
         onClose={() => setIsAgentOpen(false)}
-        onConfirmDraft={() => loadExpenses()}
+        onConfirmDraft={handleConfirmAgentDraft}
       />
 
       <PWAInstallPrompt />
