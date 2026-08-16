@@ -135,6 +135,7 @@ export async function updateExpenseAction(payload: {
   categoryId?: string;
   payerMemberId?: string;
   status: 'paid' | 'pending';
+  notes?: string;
 }) {
   try {
     const paymentDate = payload.status === 'paid' ? new Date().toISOString().split('T')[0] : null;
@@ -147,6 +148,7 @@ export async function updateExpenseAction(payload: {
         dueDate: payload.dueDate,
         ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
         ...(payload.payerMemberId ? { payerMemberId: payload.payerMemberId } : {}),
+        ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
         status: payload.status,
         paymentDate,
         updatedAt: new Date(),

@@ -10,6 +10,8 @@ import { addExpenseAction } from '@/app/actions/expenses';
 import { recordSettlementAction, getFamilyDataAction } from '@/app/actions/family';
 import { DEFAULT_CATEGORIES } from '@/db/default-categories';
 
+import { PAYMENT_METHODS, formatNotesWithPaymentMethod, PaymentMethod } from '@/services/payment-methods';
+
 export interface QuickExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -74,6 +76,7 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [categoryId, setCategoryId] = useState('');
   const [payerMemberId, setPayerMemberId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('c6_card');
   const [expenseType, setExpenseType] = useState<'single' | 'installment' | 'recurring' | 'initial_credit'>('single');
   const [installments, setInstallments] = useState(3);
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal');
@@ -160,6 +163,7 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
           installmentsCount: expenseType === 'installment' ? installments : 1,
           splits,
           status: 'pending',
+          notes: formatNotesWithPaymentMethod(paymentMethod),
         });
 
         if (res.success) {
@@ -388,6 +392,32 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Payment Method Selector */}
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">
+                  Meio de Pagamento
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {PAYMENT_METHODS.map((pm) => {
+                    const isSelected = paymentMethod === pm.key;
+                    return (
+                      <button
+                        key={pm.key}
+                        type="button"
+                        onClick={() => setPaymentMethod(pm.key)}
+                        className={`flex items-center justify-center gap-1.5 p-2 rounded-m3-md border text-xs font-semibold transition-all ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30'
+                            : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
+                        }`}
+                      >
+                        <span>{pm.badgeLabel}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

@@ -9,10 +9,14 @@ import { CategoryBudgets, CategoryBudget } from '@/components/dashboard/Category
 import { MonthPicker } from '@/components/ui/MonthPicker';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
+import { C6CardInvoiceWidget } from '@/components/dashboard/C6CardInvoiceWidget';
+import { DueBillsAlertBanner } from '@/components/dashboard/DueBillsAlertBanner';
+import { MonthlyReportModal } from '@/components/dashboard/MonthlyReportModal';
+import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { DollarSign, Clock, CalendarDays, TrendingUp, Plus, Sparkles, Receipt } from 'lucide-react';
+import { DollarSign, Clock, CalendarDays, TrendingUp, Plus, Sparkles, Receipt, FileText } from 'lucide-react';
 import { ExtractedExpenseDraft } from '@/services/ai/types';
 import { getDashboardDataAction, addExpenseAction, toggleExpenseStatusAction } from '@/app/actions/expenses';
 import { getFamilyDataAction } from '@/app/actions/family';
@@ -20,17 +24,19 @@ import { getFamilyDataAction } from '@/app/actions/family';
 export default function DashboardPage() {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [familyData, setFamilyData] = useState<{
     id: string;
     name: string;
+    currency?: string;
     members: Array<{ id: string; displayName: string; role: any }>;
     categories: Array<{ id: string; name: string; color: string }>;
   } | null>(null);
 
-  const [metrics, setMetrics] = useState({
+  const [metrics, setMetrics] = useState<any>({
     totalCurrentMonth: 0,
     totalPaid: 0,
     totalPending: 0,
@@ -38,6 +44,19 @@ export default function DashboardPage() {
     trend: {
       trend: 'stable' as 'up' | 'down' | 'stable',
       percentageChange: 0,
+    },
+    c6Invoice: {
+      total: 0,
+      paid: 0,
+      pending: 0,
+      itemsCount: 0,
+      byMember: [],
+    },
+    alerts: {
+      overdueCount: 0,
+      overdueAmount: 0,
+      dueSoonCount: 0,
+      dueSoonAmount: 0,
     },
   });
 
@@ -152,14 +171,37 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <MonthPicker
-            currentDate={selectedDate}
-            onChange={(newDate) => {
-              setSelectedDate(newDate);
-              loadData(newDate);
-            }}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthPicker
+              currentDate={selectedDate}
+              onChange={(newDate) => {
+                setSelectedDate(newDate);
+                loadData(newDate);
+              }}
+            />
+            <Button
+              variant="outlined"
+              size="sm"
+              onClick={() => setIsReportOpen(true)}
+              className="gap-1.5 text-xs h-9"
+            >
+              <FileText className="h-4 w-4 text-primary" />
+              Relatório (PDF)
+            </Button>
+            <Button
+              variant="filled"
+              size="sm"
+              onClick={() => setIsQuickAddOpen(true)}
+              className="gap-1.5 text-xs h-9"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Lançamento
+            </Button>
+          </div>
         </div>
+
+        {/* Due Bills Alerts Banner */}
+        <DueBillsAlertBanner alerts={metrics.alerts} currency={familyData?.currency} />
 
         {/* 4 Metric Cards / Shimmer Skeleton */}
         {isLoading ? (
@@ -211,6 +253,11 @@ export default function DashboardPage() {
               icon={<TrendingUp className="h-5 w-5" />}
             />
           </div>
+        )}
+
+        {/* C6 Bank Joint Credit Card Invoice Widget */}
+        {!isLoading && metrics.c6Invoice && (
+          <C6CardInvoiceWidget c6Invoice={metrics.c6Invoice} currency={familyData?.currency} />
         )}
 
         {/* Charts & Recent Expenses Grid */}
@@ -297,6 +344,19 @@ export default function DashboardPage() {
         categories={familyData?.categories as any}
         onSuccess={loadData}
       />
+
+      <MonthlyReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        familyName={familyData?.name}
+        selectedDate={selectedDate}
+        metrics={metrics}
+        expenses={expenses}
+        categories={categoriesChart}
+        currency={familyData?.currency || 'BRL'}
+      />
+
+      <PWAInstallPrompt />
     </div>
   );
 }

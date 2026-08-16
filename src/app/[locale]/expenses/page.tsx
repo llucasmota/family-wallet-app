@@ -6,29 +6,41 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import { Search, Filter, Plus, Layers, Repeat, Trash2, CheckCircle2, Circle, Download, Pencil } from 'lucide-react';
+import { Search, Filter, Plus, Layers, Repeat, Trash2, CheckCircle2, Circle, Download, Pencil, FileText, CreditCard } from 'lucide-react';
 import { QuickExpenseModal } from '@/components/dashboard/QuickExpenseModal';
 import { EditExpenseModal } from '@/components/dashboard/EditExpenseModal';
+import { MonthlyReportModal } from '@/components/dashboard/MonthlyReportModal';
+import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt';
 import { AgentModal } from '@/components/agent/AgentModal';
 import { MonthPicker } from '@/components/ui/MonthPicker';
 import { getFamilyDataAction } from '@/app/actions/family';
 import { getDashboardDataAction, toggleExpenseStatusAction, deleteExpenseAction } from '@/app/actions/expenses';
+import { extractPaymentMethod } from '@/services/payment-methods';
 
 export default function ExpensesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [familyData, setFamilyData] = useState<{
     id: string;
+    name?: string;
     currency?: string;
     members: any[];
     categories: any[];
   } | null>(null);
+
+  const [metrics, setMetrics] = useState<any>({
+    totalCurrentMonth: 0,
+    totalPaid: 0,
+    totalPending: 0,
+    c6Invoice: { total: 0, paid: 0, pending: 0, byMember: [] },
+  });
 
   const [expenses, setExpenses] = useState<any[]>([]);
 
@@ -41,8 +53,9 @@ export default function ExpensesPage() {
           famRes.family.id,
           dateToLoad.toISOString()
         );
-        if (dashRes.success && dashRes.recentExpenses) {
-          setExpenses(dashRes.recentExpenses);
+        if (dashRes.success) {
+          if (dashRes.metrics) setMetrics(dashRes.metrics as any);
+          if (dashRes.recentExpenses) setExpenses(dashRes.recentExpenses);
         }
       }
     } catch (err) {
@@ -132,11 +145,20 @@ export default function ExpensesPage() {
                 loadExpenses(newDate);
               }}
             />
-            <Button variant="outlined" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs">
+            <Button
+              variant="outlined"
+              size="sm"
+              onClick={() => setIsReportOpen(true)}
+              className="gap-1.5 text-xs h-9"
+            >
+              <FileText className="h-4 w-4 text-primary" />
+              Relatório (PDF)
+            </Button>
+            <Button variant="outlined" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs h-9">
               <Download className="h-4 w-4" />
               Exportar CSV
             </Button>
-            <Button variant="filled" size="sm" onClick={() => setIsQuickAddOpen(true)}>
+            <Button variant="filled" size="sm" onClick={() => setIsQuickAddOpen(true)} className="gap-1.5 text-xs h-9">
               <Plus className="h-4 w-4" />
               Lançar Despesa
             </Button>
@@ -201,6 +223,7 @@ export default function ExpensesPage() {
                 <tr>
                   <th className="py-3.5 px-4">Descrição & Categoria</th>
                   <th className="py-3.5 px-4">Pagador</th>
+                  <th className="py-3.5 px-4">Meio</th>
                   <th className="py-3.5 px-4">Divisão</th>
                   <th className="py-3.5 px-4">Vencimento</th>
                   <th className="py-3.5 px-4">Valor</th>
@@ -222,6 +245,9 @@ export default function ExpensesPage() {
                         <div className="h-6 w-24 rounded bg-surface-container-highest dark:bg-white/[0.06]" />
                       </td>
                       <td className="py-3.5 px-4">
+                        <div className="h-4 w-16 rounded bg-surface-container-highest dark:bg-white/[0.04]" />
+                      </td>
+                      <td className="py-3.5 px-4">
                         <div className="h-3 w-16 rounded bg-surface-container-highest dark:bg-white/[0.04]" />
                       </td>
                       <td className="py-3.5 px-4">
@@ -240,83 +266,93 @@ export default function ExpensesPage() {
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-xs text-on-surface-variant">
+                    <td colSpan={8} className="py-12 text-center text-xs text-on-surface-variant">
                       Nenhuma despesa encontrada. Clique em <strong>Lançar Despesa</strong> para começar!
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-surface-container/50 dark:hover:bg-white/[0.02] transition-colors"
-                    >
-                      <td className="py-3 px-4 font-medium text-on-surface">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <span>{item.description}</span>
-                            {item.expenseType === 'installment' && (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-surface-container-highest px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant">
-                                <Layers className="h-2.5 w-2.5" />
-                                {item.installmentInfo}
-                              </span>
-                            )}
-                            {item.expenseType === 'recurring' && (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-surface-container-highest px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                                <Repeat className="h-2.5 w-2.5" />
-                                Fixo
-                              </span>
-                            )}
+                  filtered.map((item) => {
+                    const pMethod = extractPaymentMethod(item.notes);
+                    const pBadge = pMethod === 'c6_card' ? '💳 C6 Bank' : pMethod === 'pix' ? '💠 Pix' : '💵 Dinheiro';
+
+                    return (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-surface-container/50 dark:hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="py-3 px-4 font-medium text-on-surface">
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <span>{item.description}</span>
+                              {item.expenseType === 'installment' && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-surface-container-highest px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant">
+                                  <Layers className="h-2.5 w-2.5" />
+                                  {item.installmentInfo}
+                                </span>
+                              )}
+                              {item.expenseType === 'recurring' && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-surface-container-highest px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                  <Repeat className="h-2.5 w-2.5" />
+                                  Fixo
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className="text-[11px] font-medium"
+                              style={{ color: item.categoryColor }}
+                            >
+                              {item.categoryName}
+                            </span>
                           </div>
-                          <span
-                            className="text-[11px] font-medium"
-                            style={{ color: item.categoryColor }}
-                          >
-                            {item.categoryName}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <Avatar name={item.payerName} avatarKey={item.payerAvatarKey} size="sm" />
+                            <span>{item.payerName}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-on-surface-variant whitespace-nowrap">
+                          <span className="rounded bg-surface-container px-2 py-0.5 text-[10px] font-semibold border border-outline-variant/20">
+                            {pBadge}
                           </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Avatar name={item.payerName} avatarKey={item.payerAvatarKey} size="sm" />
-                          <span>{item.payerName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-on-surface-variant">{item.splitSummary}</td>
-                      <td className="py-3 px-4 text-on-surface-variant">{item.dueDate}</td>
-                      <td className="py-3 px-4 font-bold text-on-surface">
-                        {formatCurrency(item.amount)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleToggleStatus(item.id, item.status)}
-                          title="Clique para alternar entre Pago e A Vencer"
-                          className="focus:outline-none transition-transform active:scale-95"
-                        >
-                          <Badge variant={item.status === 'paid' ? 'paid' : 'pending'}>
-                            {item.status === 'paid' ? '✓ Pago' : 'A Vencer'}
-                          </Badge>
-                        </button>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        </td>
+                        <td className="py-3 px-4 text-on-surface-variant">{item.splitSummary}</td>
+                        <td className="py-3 px-4 text-on-surface-variant">{item.dueDate}</td>
+                        <td className="py-3 px-4 font-bold text-on-surface">
+                          {formatCurrency(item.amount)}
+                        </td>
+                        <td className="py-3 px-4">
                           <button
-                            onClick={() => setEditingExpense(item)}
-                            title="Editar despesa / status"
-                            className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container"
+                            onClick={() => handleToggleStatus(item.id, item.status)}
+                            title="Clique para alternar entre Pago e A Vencer"
+                            className="focus:outline-none transition-transform active:scale-95"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Badge variant={item.status === 'paid' ? 'paid' : 'pending'}>
+                              {item.status === 'paid' ? '✓ Pago' : 'A Vencer'}
+                            </Badge>
                           </button>
-                          <button
-                            onClick={() => handleDeleteExpense(item.id)}
-                            title="Excluir lançamento"
-                            className="text-on-surface-variant hover:text-error transition-colors p-1.5 rounded hover:bg-surface-container"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => setEditingExpense(item)}
+                              title="Editar despesa / status"
+                              className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteExpense(item.id)}
+                              title="Excluir lançamento"
+                              className="text-on-surface-variant hover:text-error transition-colors p-1.5 rounded hover:bg-surface-container"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -343,11 +379,24 @@ export default function ExpensesPage() {
         onSuccess={loadExpenses}
       />
 
+      <MonthlyReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        familyName={familyData?.name}
+        selectedDate={selectedDate}
+        metrics={metrics}
+        expenses={expenses}
+        categories={familyData?.categories || []}
+        currency={familyData?.currency || 'BRL'}
+      />
+
       <AgentModal
         isOpen={isAgentOpen}
         onClose={() => setIsAgentOpen(false)}
         onConfirmDraft={() => loadExpenses()}
       />
+
+      <PWAInstallPrompt />
     </div>
   );
 }

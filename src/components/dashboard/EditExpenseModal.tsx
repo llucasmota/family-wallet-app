@@ -7,6 +7,7 @@ import { CurrencyInput } from '../ui/CurrencyInput';
 import { Toast } from '../ui/Toast';
 import { X, Check, Loader2, Calendar, Tag, User, CheckCircle2, Clock } from 'lucide-react';
 import { updateExpenseAction } from '@/app/actions/expenses';
+import { PAYMENT_METHODS, formatNotesWithPaymentMethod, extractPaymentMethod, PaymentMethod } from '@/services/payment-methods';
 
 export interface EditExpenseModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export interface EditExpenseModalProps {
     status: 'paid' | 'pending';
     categoryId?: string;
     payerMemberId?: string;
+    notes?: string;
   } | null;
   members?: Array<{ id: string; displayName: string; role: string }>;
   categories?: Array<{ id: string; name: string; color: string }>;
@@ -41,6 +43,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const [status, setStatus] = useState<'paid' | 'pending'>('pending');
   const [categoryId, setCategoryId] = useState('');
   const [payerMemberId, setPayerMemberId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('c6_card');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error'; isVisible: boolean }>({
@@ -60,6 +63,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       setStatus(expense.status || 'pending');
       setCategoryId(expense.categoryId || categories[0]?.id || '');
       setPayerMemberId(expense.payerMemberId || members[0]?.id || '');
+      setPaymentMethod(extractPaymentMethod(expense.notes));
     }
   }, [expense, categories, members]);
 
@@ -93,6 +97,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
         status,
         categoryId: categoryId || undefined,
         payerMemberId: payerMemberId || undefined,
+        notes: formatNotesWithPaymentMethod(paymentMethod),
       });
 
       if (res.success) {
@@ -162,6 +167,30 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 <CheckCircle2 className="h-4 w-4" />
                 ✓ Pago (Liquidado)
               </button>
+            </div>
+          </div>
+
+          {/* Payment Method Selector */}
+          <div>
+            <label className="font-semibold text-on-surface-variant mb-1.5 block">Meio de Pagamento</label>
+            <div className="grid grid-cols-3 gap-2">
+              {PAYMENT_METHODS.map((pm) => {
+                const isSelected = paymentMethod === pm.key;
+                return (
+                  <button
+                    key={pm.key}
+                    type="button"
+                    onClick={() => setPaymentMethod(pm.key)}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-m3-md border text-xs font-semibold transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30'
+                        : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
+                    }`}
+                  >
+                    <span>{pm.badgeLabel}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
