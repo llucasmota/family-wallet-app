@@ -291,14 +291,24 @@ export default function DashboardPage() {
                 Comece cadastrando sua primeira despesa compartilhada ou definindo um saldo inicial na família.
               </p>
             </div>
-            <div className="flex items-center gap-3 mt-2">
-              <Button variant="filled" size="md" onClick={() => setIsQuickAddOpen(true)}>
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 mt-2 w-full sm:w-auto">
+              <Button
+                variant="filled"
+                size="md"
+                onClick={() => setIsQuickAddOpen(true)}
+                className="w-full sm:w-auto gap-1.5 font-bold text-xs sm:text-sm"
+              >
                 <Plus className="h-4 w-4" />
-                Lançar Primeiro Gasto
+                <span>{tDash('quickAdd')}</span>
               </Button>
-              <Button variant="tonal" size="md" onClick={() => setIsAgentOpen(true)}>
+              <Button
+                variant="tonal"
+                size="md"
+                onClick={() => setIsAgentOpen(true)}
+                className="w-full sm:w-auto gap-1.5 font-bold text-xs sm:text-sm"
+              >
                 <Sparkles className="h-4 w-4 text-primary" />
-                Usar Modo Agente
+                <span>{tDash('agentMode')}</span>
               </Button>
             </div>
           </Card>

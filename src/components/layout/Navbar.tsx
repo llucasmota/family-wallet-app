@@ -92,32 +92,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAgent, onOpenQuickAdd }) =
           </div>
 
           {/* Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Language Switcher Pill */}
             <LanguageSwitcher variant="pill" />
 
-            {/* Agent Mode Trigger - Visible on both Mobile & Desktop */}
+            {/* Agent Mode Trigger - Desktop Only */}
             <Button
               variant="tonal"
               size="sm"
               onClick={onOpenAgent}
               aria-label={tNav('agentMode')}
               title={tNav('agentMode')}
-              className="gap-1.5 text-xs font-semibold bg-primary-container/80 text-primary border border-primary/30 h-8 px-2 sm:px-3 sm:h-9"
+              className="gap-1.5 text-xs font-semibold bg-primary-container/80 text-primary border border-primary/30 h-9 px-3 hidden sm:inline-flex"
             >
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="hidden sm:inline">{tNav('agentMode')}</span>
+              <span>{tNav('agentMode')}</span>
             </Button>
 
-            {/* Quick Add Expense */}
+            {/* Quick Add Expense - Desktop Only */}
             <Button
               variant="filled"
               size="sm"
               onClick={onOpenQuickAdd}
-              className="gap-1 text-xs h-8 px-2.5 sm:px-3 sm:h-9"
+              className="gap-1 text-xs h-9 px-3 hidden sm:inline-flex"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">{tNav('newExpense')}</span>
+              <span>{tNav('newExpense')}</span>
             </Button>
 
             <ThemeToggle />

@@ -39,13 +39,13 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning className="overflow-x-hidden w-full max-w-[100vw]">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="min-h-screen bg-surface text-on-surface antialiased transition-colors duration-200 select-none sm:select-auto">
+      <body className="min-h-screen bg-surface text-on-surface antialiased transition-colors duration-200 select-none sm:select-auto overflow-x-hidden w-full max-w-[100vw]">
         <ThemeProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
             {children}

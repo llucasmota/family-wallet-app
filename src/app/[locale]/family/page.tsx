@@ -536,12 +536,12 @@ export default function FamilyPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               variant="tonal"
               size="sm"
               onClick={handleOpenAddMember}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs h-9 justify-center"
             >
               <Plus className="h-4 w-4" />
               {tFam('addMember')}
@@ -550,7 +550,7 @@ export default function FamilyPage() {
               variant="outlined"
               size="sm"
               onClick={() => setIsCreditModalOpen(true)}
-              className="gap-1 text-xs"
+              className="gap-1 text-xs h-9 justify-center"
             >
               <Plus className="h-3.5 w-3.5" />
               Lançar Crédito
@@ -559,7 +559,7 @@ export default function FamilyPage() {
               variant="filled"
               size="sm"
               onClick={() => setIsInviteModalOpen(true)}
-              className="gap-2 text-xs"
+              className="col-span-2 sm:col-span-1 gap-2 text-xs h-9 justify-center font-bold"
             >
               <Share2 className="h-4 w-4" />
               {tFam('inviteLink')}
