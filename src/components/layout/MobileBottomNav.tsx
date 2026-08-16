@@ -20,9 +20,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenQuickAdd
   return (
     <nav
       aria-label="Navegação Principal Mobile"
-      className="fixed bottom-3 inset-x-3 z-40 block md:hidden max-w-md mx-auto transition-all animate-in slide-in-from-bottom-5 duration-300"
+      className="fixed bottom-0 inset-x-0 z-50 block md:hidden max-w-lg mx-auto p-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-all animate-in slide-in-from-bottom-5 duration-300"
     >
-      <div className="flex items-center justify-around px-2 py-2 rounded-2xl border border-outline-variant/30 bg-surface/90 dark:bg-[#121614]/90 backdrop-blur-xl shadow-2xl text-on-surface">
+      <div className="flex items-center justify-around px-2 py-1.5 rounded-2xl border border-outline-variant/40 bg-surface/95 dark:bg-[#141816]/95 backdrop-blur-2xl shadow-2xl text-on-surface">
         {/* 1. Visão Geral */}
         <Link
           href="/"
