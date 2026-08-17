@@ -128,10 +128,10 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
       if (expenseType === 'initial_credit') {
         const res = await recordSettlementAction({
           familyId: liveFamilyId || 'default',
-          fromMemberId: debtorId || activeMembers[0].id,
-          toMemberId: creditorId || activeMembers[0].id,
-          amount: -parseFloat(amount),
-          note: description || 'Crédito Inicial Pré-existente',
+          fromMemberId: creditorId || activeMembers[0].id,
+          toMemberId: debtorId || activeMembers[1]?.id || activeMembers[0].id,
+          amount: parseFloat(amount),
+          note: description.trim() || 'Crédito / Transferência entre membros',
         });
 
         if (res.success) {

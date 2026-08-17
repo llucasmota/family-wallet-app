@@ -37,6 +37,7 @@ import { Toast } from '@/components/ui/Toast';
 import {
   getFamilyDataAction,
   recordSettlementAction,
+  deleteSettlementAction,
   updateFamilySettingsAction,
   updateMemberProfileAction,
   updateFamilyCurrencyWithConversionAction,
@@ -45,6 +46,7 @@ import {
   reactivateMemberAction,
   resetFamilyDataAction,
 } from '@/app/actions/family';
+import { formatDateDisplay } from '@/lib/formatters';
 import {
   getBetaRequestsAction,
   approveBetaRequestAction,
@@ -129,6 +131,22 @@ export default function FamilyPage() {
     }>
   >([]);
 
+  const [settlementsHistory, setSettlementsHistory] = useState<
+    Array<{
+      id: string;
+      fromMemberId: string;
+      fromName: string;
+      fromAvatarKey: string;
+      toMemberId: string;
+      toName: string;
+      toAvatarKey: string;
+      amount: number;
+      notes?: string | null;
+      settlementDate: string;
+      createdAt: string | Date;
+    }>
+  >([]);
+
   const loadFamily = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -139,6 +157,9 @@ export default function FamilyPage() {
         setGroupCurrency(res.family.currency || 'BRL');
         if (res.settlements) {
           setSettlements(res.settlements);
+        }
+        if (res.settlementsHistory) {
+          setSettlementsHistory(res.settlementsHistory);
         }
         if (res.family.members && res.family.members.length > 0) {
           setCreditorId(res.family.members[0].id);
@@ -460,28 +481,48 @@ export default function FamilyPage() {
 
   const handleSaveInitialCredit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!creditAmount) {
-      showToast('Informe o valor do crédito', 'error');
+    if (!creditAmount || parseFloat(creditAmount) <= 0) {
+      showToast('Informe um valor válido para a transferência/crédito', 'error');
       return;
     }
 
     setIsSettling(true);
     try {
-      await recordSettlementAction({
+      const res = await recordSettlementAction({
         familyId: family?.id || 'default',
-        fromMemberId: debtorId,
-        toMemberId: creditorId,
-        amount: -parseFloat(creditAmount),
-        note: creditNote || 'Saldo/Crédito Inicial Pré-existente',
+        fromMemberId: creditorId,
+        toMemberId: debtorId,
+        amount: parseFloat(creditAmount),
+        note: creditNote.trim() || 'Transferência / Crédito entre membros',
       });
-      setIsCreditModalOpen(false);
-      setCreditAmount('');
-      setCreditNote('');
-      await loadFamily();
-    } catch (err) {
+      if (res.success) {
+        showToast('✨ Transferência/Crédito registrado com sucesso!');
+        setIsCreditModalOpen(false);
+        setCreditAmount('');
+        setCreditNote('');
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao registrar crédito', 'error');
+      }
+    } catch (err: any) {
       console.error(err);
+      showToast(err?.message || 'Erro inesperado ao salvar', 'error');
     } finally {
       setIsSettling(false);
+    }
+  };
+
+  const handleDeleteSettlement = async (settlementId: string) => {
+    try {
+      const res = await deleteSettlementAction(settlementId);
+      if (res.success) {
+        showToast('Registro de transferência removido com sucesso!');
+        await loadFamily();
+      } else {
+        showToast(res.error || 'Erro ao remover registro', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Erro inesperado', 'error');
     }
   };
 
@@ -625,6 +666,84 @@ export default function FamilyPage() {
                   {tFam('allSettled')}
                 </div>
               )}
+            </div>
+          </Card>
+        )}
+
+        {/* Transfer and Credit History Section */}
+        {settlementsHistory && settlementsHistory.length > 0 && (
+          <Card variant="elevated" className="p-4 sm:p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4 text-primary" />
+                <h3 className="text-sm sm:text-base font-bold text-on-surface">
+                  Histórico de Transferências & Créditos ({settlementsHistory.length})
+                </h3>
+              </div>
+              <Button
+                variant="tonal"
+                size="sm"
+                onClick={() => setIsCreditModalOpen(true)}
+                className="gap-1 text-xs h-7 px-2.5"
+              >
+                <Plus className="h-3 w-3" />
+                Nova Transferência
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {settlementsHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-m3-md bg-surface-container dark:bg-[#161C19] border border-outline-variant/30 text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center -space-x-1.5 shrink-0">
+                      <Avatar name={item.fromName} avatarKey={item.fromAvatarKey} size="sm" />
+                      <Avatar name={item.toName} avatarKey={item.toAvatarKey} size="sm" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1 font-semibold text-on-surface truncate">
+                        <span>{item.fromName}</span>
+                        <span className="text-on-surface-variant font-normal">➔</span>
+                        <span>{item.toName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-on-surface-variant">
+                        <span>
+                          {formatDateDisplay(
+                            item.settlementDate ||
+                              (item.createdAt instanceof Date
+                                ? item.createdAt.toISOString().split('T')[0]
+                                : String(item.createdAt || '').split('T')[0])
+                          )}
+                        </span>
+                        {item.notes && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate max-w-[140px] sm:max-w-[200px]" title={item.notes}>
+                              {item.notes}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                      {formatCurrency(item.amount)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSettlement(item.id)}
+                      title="Excluir lançamento"
+                      className="p-1.5 rounded-full text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
         )}
@@ -1333,7 +1452,7 @@ export default function FamilyPage() {
         </div>
       )}
 
-      {/* Starting Credit Balance Modal */}
+      {/* Starting Credit / Transfer Modal */}
       {isCreditModalOpen && (
         <div
           onClick={() => setIsCreditModalOpen(false)}
@@ -1346,9 +1465,9 @@ export default function FamilyPage() {
           >
             <div className="flex items-center justify-between border-b border-outline-variant/20 dark:border-white/[0.06] pb-3">
               <div>
-                <h3 className="font-semibold text-on-surface">Lançar Crédito Inicial</h3>
+                <h3 className="font-semibold text-on-surface">Lançar Crédito / Transferência</h3>
                 <p className="text-xs text-on-surface-variant">
-                  Defina um saldo pré-existente sem precisar lançar despesas passadas
+                  Registre uma transferência feita no mês (ex: Pix para completar aluguel) ou saldo inicial
                 </p>
               </div>
               <Button variant="text" size="icon" onClick={() => setIsCreditModalOpen(false)}>
@@ -1358,7 +1477,9 @@ export default function FamilyPage() {
 
             <form onSubmit={handleSaveInitialCredit} className="flex flex-col gap-3 text-xs">
               <div>
-                <label className="font-semibold text-on-surface-variant">Quem tem o crédito a favor?</label>
+                <label className="font-semibold text-on-surface-variant">
+                  Quem enviou o dinheiro / tem o crédito a favor:
+                </label>
                 <select
                   value={creditorId}
                   onChange={(e) => setCreditorId(e.target.value)}
@@ -1373,7 +1494,9 @@ export default function FamilyPage() {
               </div>
 
               <div>
-                <label className="font-semibold text-on-surface-variant">Quem deve esse valor?</label>
+                <label className="font-semibold text-on-surface-variant">
+                  Quem recebeu o dinheiro / deve o valor:
+                </label>
                 <select
                   value={debtorId}
                   onChange={(e) => setDebtorId(e.target.value)}
@@ -1390,7 +1513,7 @@ export default function FamilyPage() {
               </div>
 
               <div>
-                <label className="font-semibold text-on-surface-variant">Valor do Crédito</label>
+                <label className="font-semibold text-on-surface-variant">Valor da Transferência / Crédito</label>
                 <div className="mt-1">
                   <CurrencyInput
                     value={creditAmount}
@@ -1406,7 +1529,7 @@ export default function FamilyPage() {
                   type="text"
                   value={creditNote}
                   onChange={(e) => setCreditNote(e.target.value)}
-                  placeholder="Ex: Saldo trazido do mês passado, viagem anterior"
+                  placeholder="Ex: Pix para ajudar no aluguel, saldo do mês passado"
                   className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
                 />
               </div>
@@ -1421,7 +1544,14 @@ export default function FamilyPage() {
                   Cancelar
                 </Button>
                 <Button variant="filled" size="md" type="submit" disabled={isSettling}>
-                  {isSettling ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirmar Crédito'}
+                  {isSettling ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Confirmar Transferência'
+                  )}
                 </Button>
               </div>
             </form>

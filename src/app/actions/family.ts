@@ -129,6 +129,7 @@ export async function getFamilyDataAction() {
     // 3. Fetch past settlements/transfers already logged
     const loggedSettlements = await db.query.settlements.findMany({
       where: eq(settlements.familyId, family.id),
+      orderBy: [desc(settlements.createdAt)],
     });
 
     const mappedSettlements = loggedSettlements.map((s) => ({
@@ -161,6 +162,25 @@ export async function getFamilyDataAction() {
       };
     });
 
+    // Format historical settlements
+    const settlementsHistory = loggedSettlements.map((s) => {
+      const fromMember = family.members.find((m) => m.id === s.fromMemberId);
+      const toMember = family.members.find((m) => m.id === s.toMemberId);
+      return {
+        id: s.id,
+        fromMemberId: s.fromMemberId,
+        fromName: fromMember?.displayName || 'Membro',
+        fromAvatarKey: fromMember?.avatarKey || 'husband',
+        toMemberId: s.toMemberId,
+        toName: toMember?.displayName || 'Membro',
+        toAvatarKey: toMember?.avatarKey || 'wife',
+        amount: parseFloat(s.amount),
+        notes: s.notes,
+        settlementDate: s.settlementDate,
+        createdAt: s.createdAt,
+      };
+    });
+
     const currentMember = user?.id
       ? family.members.find((m) => m.userId === user.id) || null
       : null;
@@ -172,6 +192,7 @@ export async function getFamilyDataAction() {
       currentUserEmail: user?.email || null,
       currentMember,
       settlements: formattedDebts,
+      settlementsHistory,
     };
   } catch (error: any) {
     console.error('Error in getFamilyDataAction:', error);
@@ -310,6 +331,7 @@ export async function recordSettlementAction(payload: {
   toMemberId: string;
   amount: number;
   note?: string;
+  date?: string;
 }) {
   try {
     let targetFamilyId = payload.familyId;
@@ -332,15 +354,17 @@ export async function recordSettlementAction(payload: {
       else if (members[0]) toId = members[0].id;
     }
 
+    const cleanAmount = Math.abs(payload.amount).toFixed(2);
+
     const [settlement] = await db
       .insert(settlements)
       .values({
         familyId: targetFamilyId,
         fromMemberId: fromId,
         toMemberId: toId,
-        amount: payload.amount.toString(),
-        settlementDate: new Date().toISOString().split('T')[0],
-        notes: payload.note || 'Acerto de contas entre membros',
+        amount: cleanAmount,
+        settlementDate: payload.date || new Date().toISOString().split('T')[0],
+        notes: payload.note || 'Transferência / Acerto entre membros',
       })
       .returning();
 
@@ -350,6 +374,19 @@ export async function recordSettlementAction(payload: {
   } catch (error: any) {
     console.error('Error recording settlement:', error);
     return { success: false, error: error.message || 'Falha ao registrar acerto' };
+  }
+}
+
+export async function deleteSettlementAction(settlementId: string) {
+  try {
+    await db.delete(settlements).where(eq(settlements.id, settlementId));
+
+    revalidatePath('/family');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting settlement:', error);
+    return { success: false, error: error.message || 'Falha ao remover registro' };
   }
 }
 

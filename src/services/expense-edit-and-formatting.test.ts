@@ -5,6 +5,7 @@ import {
   formatNotesWithPaymentMethod,
   extractCleanNotes,
 } from './payment-methods';
+import { calculateNetSettlements } from './expense-calculator';
 
 describe('Date and Currency Formatters (i18n)', () => {
   it('formats dates in Brazilian standard (DD/MM/YYYY) when locale is pt-BR', () => {
@@ -97,4 +98,83 @@ describe('Split Ratio and Participation Calculations', () => {
     expect(summary).toBe('100% Individual');
   });
 });
+
+describe('Settlements, Transfers and Initial Credit Calculations', () => {
+  it('calculates rent payment with subsequent bank transfer between spouses', () => {
+    const husband = 'husband-id';
+    const wife = 'wife-id';
+    const members = [husband, wife];
+
+    // Husband paid R$ 2000 rent, split 50% / 50%
+    const paidExpenses = [
+      {
+        payerId: husband,
+        splits: [
+          { memberId: husband, computedAmount: 1000 },
+          { memberId: wife, computedAmount: 1000 },
+        ],
+      },
+    ];
+
+    // Before transfer: wife owes husband R$ 1000
+    const debtsBefore = calculateNetSettlements(members, paidExpenses, [], []);
+    expect(debtsBefore).toEqual([
+      { fromMemberId: wife, toMemberId: husband, amount: 1000 },
+    ]);
+
+    // Wife transfers R$ 1000 to husband to complete rent
+    const settlements = [
+      { fromMemberId: wife, toMemberId: husband, amount: 1000 },
+    ];
+
+    // After transfer: all settled!
+    const debtsAfter = calculateNetSettlements(members, paidExpenses, [], settlements);
+    expect(debtsAfter).toEqual([]);
+  });
+
+  it('handles partial transfer during the month', () => {
+    const husband = 'husband-id';
+    const wife = 'wife-id';
+    const members = [husband, wife];
+
+    // Husband paid R$ 2000 rent (wife share: 1000)
+    const paidExpenses = [
+      {
+        payerId: husband,
+        splits: [
+          { memberId: husband, computedAmount: 1000 },
+          { memberId: wife, computedAmount: 1000 },
+        ],
+      },
+    ];
+
+    // Wife transfers R$ 600 via PIX
+    const settlements = [
+      { fromMemberId: wife, toMemberId: husband, amount: 600 },
+    ];
+
+    // Wife still owes remainder R$ 400
+    const debts = calculateNetSettlements(members, paidExpenses, [], settlements);
+    expect(debts).toEqual([
+      { fromMemberId: wife, toMemberId: husband, amount: 400 },
+    ]);
+  });
+
+  it('handles initial starting credit prior to app usage', () => {
+    const husband = 'husband-id';
+    const wife = 'wife-id';
+    const members = [husband, wife];
+
+    // Wife starts with R$ 300 credit a favor (husband owes wife R$ 300)
+    const initialCredits = [
+      { creditorId: wife, debtorId: husband, amount: 300 },
+    ];
+
+    const debts = calculateNetSettlements(members, [], initialCredits, []);
+    expect(debts).toEqual([
+      { fromMemberId: husband, toMemberId: wife, amount: 300 },
+    ]);
+  });
+});
+
 
