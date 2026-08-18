@@ -175,6 +175,40 @@ describe('Settlements, Transfers and Initial Credit Calculations', () => {
       { fromMemberId: husband, toMemberId: wife, amount: 300 },
     ]);
   });
+
+  it('proves that distinct member assignment correctly affects balances vs identical member transfer', () => {
+    const husband = 'husband-id';
+    const wife = 'wife-id';
+    const members = [husband, wife];
+
+    // Husband paid R$ 1000 with 50/50 split (Wife owes R$ 500)
+    const paidExpenses = [
+      {
+        payerId: husband,
+        splits: [
+          { memberId: husband, computedAmount: 500 },
+          { memberId: wife, computedAmount: 500 },
+        ],
+      },
+    ];
+
+    // Case 1: Buggy self-transfer (from husband to husband) -> has NO effect on wife debt
+    const invalidSelfTransfer = [
+      { fromMemberId: husband, toMemberId: husband, amount: 500 },
+    ];
+    const debtsUnchanged = calculateNetSettlements(members, paidExpenses, [], invalidSelfTransfer);
+    expect(debtsUnchanged).toEqual([
+      { fromMemberId: wife, toMemberId: husband, amount: 500 },
+    ]);
+
+    // Case 2: Fixed distinct transfer (from wife to husband) -> settles the debt to 0!
+    const validTransfer = [
+      { fromMemberId: wife, toMemberId: husband, amount: 500 },
+    ];
+    const debtsSettled = calculateNetSettlements(members, paidExpenses, [], validTransfer);
+    expect(debtsSettled).toEqual([]);
+  });
 });
+
 
 

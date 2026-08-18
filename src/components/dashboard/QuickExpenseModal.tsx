@@ -90,6 +90,22 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
   const [creditorId, setCreditorId] = useState('');
   const [debtorId, setDebtorId] = useState('');
 
+  const handleCreditorChange = (selectedId: string) => {
+    setCreditorId(selectedId);
+    if (debtorId === selectedId) {
+      const other = activeMembers.find((m) => m.id !== selectedId);
+      if (other) setDebtorId(other.id);
+    }
+  };
+
+  const handleDebtorChange = (selectedId: string) => {
+    setDebtorId(selectedId);
+    if (creditorId === selectedId) {
+      const other = activeMembers.find((m) => m.id !== selectedId);
+      if (other) setCreditorId(other.id);
+    }
+  };
+
   React.useEffect(() => {
     if (activeCategories.length > 0 && !categoryId) setCategoryId(activeCategories[0].id);
     if (activeMembers.length > 0 && !payerMemberId) setPayerMemberId(activeMembers[0].id);
@@ -126,6 +142,12 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
 
     try {
       if (expenseType === 'initial_credit') {
+        if (creditorId === debtorId && activeMembers.length > 1) {
+          showToast('Quem enviou e quem recebeu devem ser membros diferentes', 'error');
+          setIsSubmitting(false);
+          return;
+        }
+
         const res = await recordSettlementAction({
           familyId: liveFamilyId || 'default',
           fromMemberId: creditorId || activeMembers[0].id,
@@ -299,10 +321,10 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-on-surface-variant">Quem tem o crédito a favor?</label>
+                <label className="text-xs font-semibold text-on-surface-variant">Quem enviou / tem o crédito a favor?</label>
                 <select
                   value={creditorId}
-                  onChange={(e) => setCreditorId(e.target.value)}
+                  onChange={(e) => handleCreditorChange(e.target.value)}
                   className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none cursor-pointer"
                 >
                   {activeMembers.map((m) => (
@@ -314,19 +336,17 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-on-surface-variant">Quem deve esse valor?</label>
+                <label className="text-xs font-semibold text-on-surface-variant">Quem recebeu / deve esse valor?</label>
                 <select
                   value={debtorId}
-                  onChange={(e) => setDebtorId(e.target.value)}
+                  onChange={(e) => handleDebtorChange(e.target.value)}
                   className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none cursor-pointer"
                 >
-                  {activeMembers
-                    .filter((m) => m.id !== creditorId)
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.displayName}
-                      </option>
-                    ))}
+                  {activeMembers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
+                    </option>
+                  ))}
                 </select>
               </div>
 

@@ -479,10 +479,51 @@ export default function FamilyPage() {
     }
   };
 
+  const handleOpenCreditModal = () => {
+    const active = (family?.members || []).filter((m: any) => m.isActive !== false);
+    if (active.length >= 2) {
+      setCreditorId(active[0].id);
+      setDebtorId(active[1].id);
+    } else if (active.length === 1) {
+      setCreditorId(active[0].id);
+      setDebtorId(active[0].id);
+    }
+    setCreditAmount('');
+    setCreditNote('');
+    setIsCreditModalOpen(true);
+  };
+
+  const handleCreditorChange = (selectedId: string) => {
+    setCreditorId(selectedId);
+    if (debtorId === selectedId) {
+      const active = (family?.members || []).filter((m: any) => m.isActive !== false);
+      const other = active.find((m) => m.id !== selectedId);
+      if (other) {
+        setDebtorId(other.id);
+      }
+    }
+  };
+
+  const handleDebtorChange = (selectedId: string) => {
+    setDebtorId(selectedId);
+    if (creditorId === selectedId) {
+      const active = (family?.members || []).filter((m: any) => m.isActive !== false);
+      const other = active.find((m) => m.id !== selectedId);
+      if (other) {
+        setCreditorId(other.id);
+      }
+    }
+  };
+
   const handleSaveInitialCredit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!creditAmount || parseFloat(creditAmount) <= 0) {
       showToast('Informe um valor válido para a transferência/crédito', 'error');
+      return;
+    }
+
+    if (creditorId === debtorId && (family?.members?.length || 0) > 1) {
+      showToast('Quem enviou e quem recebeu devem ser membros diferentes', 'error');
       return;
     }
 
@@ -590,7 +631,7 @@ export default function FamilyPage() {
             <Button
               variant="outlined"
               size="sm"
-              onClick={() => setIsCreditModalOpen(true)}
+              onClick={handleOpenCreditModal}
               className="gap-1 text-xs h-9 justify-center"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -683,7 +724,7 @@ export default function FamilyPage() {
               <Button
                 variant="tonal"
                 size="sm"
-                onClick={() => setIsCreditModalOpen(true)}
+                onClick={handleOpenCreditModal}
                 className="gap-1 text-xs h-7 px-2.5"
               >
                 <Plus className="h-3 w-3" />
@@ -1482,7 +1523,7 @@ export default function FamilyPage() {
                 </label>
                 <select
                   value={creditorId}
-                  onChange={(e) => setCreditorId(e.target.value)}
+                  onChange={(e) => handleCreditorChange(e.target.value)}
                   className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none cursor-pointer"
                 >
                   {family?.members.map((m) => (
@@ -1499,16 +1540,14 @@ export default function FamilyPage() {
                 </label>
                 <select
                   value={debtorId}
-                  onChange={(e) => setDebtorId(e.target.value)}
+                  onChange={(e) => handleDebtorChange(e.target.value)}
                   className="mt-1 w-full rounded-m3-md border border-outline-variant/40 bg-surface dark:bg-[#141816] pl-3.5 pr-9 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none cursor-pointer"
                 >
-                  {family?.members
-                    .filter((m) => m.id !== creditorId)
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.displayName}
-                      </option>
-                    ))}
+                  {family?.members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
+                    </option>
+                  ))}
                 </select>
               </div>
 

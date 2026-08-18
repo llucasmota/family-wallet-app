@@ -350,8 +350,24 @@ export async function recordSettlementAction(payload: {
       if (members[0]) fromId = members[0].id;
     }
     if (!toId || !toId.includes('-')) {
-      if (members[1]) toId = members[1].id;
+      const other = members.find((m) => m.id !== fromId);
+      if (other) toId = other.id;
+      else if (members[1]) toId = members[1].id;
       else if (members[0]) toId = members[0].id;
+    }
+
+    // Prevent identical from and to member
+    if (fromId === toId) {
+      if (members.length >= 2) {
+        const other = members.find((m) => m.id !== fromId);
+        if (other) {
+          toId = other.id;
+        } else {
+          return { success: false, error: 'Quem enviou e quem recebeu devem ser membros diferentes.' };
+        }
+      } else {
+        return { success: false, error: 'É necessário ter ao menos 2 membros para registrar transferências.' };
+      }
     }
 
     const cleanAmount = Math.abs(payload.amount).toFixed(2);
